@@ -73,4 +73,7 @@ class Identity:
         self.item = item
 
     def toOutputString(self):
-        return str(self.item.surfaceNumber)
+        if isinstance(self.item, Identity):
+            return "-" + self.item.toOutputString()
+        else:
+            return "#" + self.item.toOutputString()
