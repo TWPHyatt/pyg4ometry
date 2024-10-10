@@ -1,3 +1,6 @@
+from .Surfaces import Surface
+
+
 class Cell:
     def __init__(self, surfaces=[], reg=None, cellNumber=None):
         self.surfaceList = surfaces
@@ -21,6 +24,9 @@ class Cell:
     def addMacrobodies(self, macrobody):
         self.addSurfaces(macrobody)
 
+    def toOutputString(self):
+        return str(self.cellNumber)
+
 
 class Intersection:
     """
@@ -33,7 +39,15 @@ class Intersection:
         self.right = right
 
     def toOutputString(self):
-        return self.left.toOutputString() + " " + self.right.toOutputString()
+        # IF UNION DOWNSTREAM ADD PARENTHESES (which also are read as an intersection like a " ")
+        if isinstance(self.right, Union) and isinstance(self.left, Union):
+            return "(" + self.left.toOutputString() + ") (" + self.right.toOutputString() + ")"
+        elif isinstance(self.right, Union):
+            return self.left.toOutputString() + " (" + self.right.toOutputString() + ")"
+        elif isinstance(self.left, Union):
+            return "(" + self.left.toOutputString() + ") " + self.right.toOutputString()
+        else:
+            return self.left.toOutputString() + " " + self.right.toOutputString()
 
 
 class Union:
@@ -52,28 +66,17 @@ class Union:
 
 class Complement:
     """
-    mcnp : hash
-    pyg4 : hyphen
+    mcnp : hyphen for surface, hash for cell
+    pyg4 : exclamation mark
     """
 
     def __init__(self, item):
         self.item = item
 
     def toOutputString(self):
-        return "#" + self.item.toOutputString()
-
-
-class Identity:
-    """
-    mcnp : no operator
-    pyg4 : no operator
-    """
-
-    def __init__(self, item):
-        self.item = item
-
-    def toOutputString(self):
-        if isinstance(self.item, Identity):
-            return "-" + self.item.toOutputString()
+        if isinstance(self.item, Surface):
+            return "-" + str(self.item.surfaceNumber)
+        elif isinstance(self.item, Cell):
+            return "#" + str(self.item.cellNumber)
         else:
             return "#" + self.item.toOutputString()
