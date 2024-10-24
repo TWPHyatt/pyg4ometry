@@ -1,11 +1,12 @@
 from .Surfaces import Surface
+from .Material import Material
 
 
 class Cell:
-    def __init__(self, surfaces=[], reg=None, cellNumber=None):
+    def __init__(self, surfaces=[], geometry=None, reg=None, cellNumber=None):
         self.surfaceList = surfaces
         self.cellNumber = cellNumber
-        # self.geometry = geometry
+        self.geometry = geometry
         if reg:
             reg.addCell(self)
             self.reg = reg
@@ -23,6 +24,13 @@ class Cell:
 
     def addMacrobodies(self, macrobody):
         self.addSurfaces(macrobody)
+
+    def addMaterial(self, material):
+        if material in self.reg.materialDict:
+            material = self.reg.materialDict[material]
+
+    def addGeometry(self, geometry):
+        self.geometry = geometry
 
     def toOutputString(self):
         return str(self.cellNumber)
