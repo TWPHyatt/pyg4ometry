@@ -68,9 +68,13 @@ class Registry:
             transformation.transformationNumber = self.getNewTransformationNumber()
         self.transformationDict[transformation.transformationNumber] = transformation
 
-    def addMaterial(self):
-        pass
-        # todo
+    def addMaterial(self, material):
+        if material.materialNumber in self.materialDict:
+            material.materialNumber = self.getNewMaterialNumber()
+        if not material.materialNumber:
+            material.materialNumber = self.getNewMaterialNumber()
+        self.materialDict[material.materialNumber] = material
+        # self.materialDict[material.materialNumber] = material
 
     def getNewSurfaceNumber(self):
         if len(self.surfaceDict.keys()) == 0:
@@ -81,6 +85,11 @@ class Registry:
         if len(self.cellDict.keys()) == 0:
             return 1
         return max(self.cellDict.keys()) + 1
+
+    def getNewMaterialNumber(self):
+        if len(self.materialDict.keys()) == 0:
+            return 1
+        return max(self.materialDict.keys()) + 1
 
     def getNewTransformationNumber(self):
         if len(self.transformationDict.keys()) == 0:
