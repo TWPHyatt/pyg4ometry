@@ -2,9 +2,9 @@ class Writer:
     """
     Class to write MCNP input files from a fluka registry object.
 
-    >>> f = Writer()
-    >>> f.addGeometry(reg=reg)
-    >>> f.write("i-example.txt")
+    >> f = Writer()
+    >> f.addGeometry(reg=reg)
+    >> f.write("i-example.txt")
     """
 
     def __init__(self):
@@ -31,6 +31,9 @@ class Writer:
             f.write(f"{cell} ")
             f.write(f" ")
             f.write(f"{self.registry.cellDict[cell].toOutputString()}")
+            f.write(f" ")
+            f.write(f"{self.registry.materialDict[cell].toOutputString()}")
+            # write the special material cards (MT, MT0, MX MPN, ...) ?
             f.write("\n")
 
         # loop over surface dictionary
