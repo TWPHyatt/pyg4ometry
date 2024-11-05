@@ -15,7 +15,7 @@ class Material:
             yield lis[el]
 
     def toOutputString(self):  # used in cell card
-        return str(self.materialNumber)
+        return str(self.materialNumber) + " " + str(self.density)
 
 
 #  the rest of the classes are Material-focused DATA Cards
