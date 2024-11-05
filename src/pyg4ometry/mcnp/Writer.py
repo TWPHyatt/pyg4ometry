@@ -26,27 +26,31 @@ class Writer:
         f.write("TITLE\n")
 
         # loop over cell dictionary
-        f.write("********** CELLS **********\n")
+        f.write("c ********** CELLS **********\n")
         for cell in self.registry.cellDict:
-            f.write(f"{cell} ")
-            f.write(f" ")
+            f.write(f"")
             f.write(f"{self.registry.cellDict[cell].toOutputString()}")
             f.write(f" ")
-            f.write(f"{self.registry.materialDict[cell].toOutputString()}")
-            # write the special material cards (MT, MT0, MX MPN, ...) ?
+            f.write(
+                f"{self.registry.materialDict[self.registry.cellDict[cell].materialNumber].toOutputString()}"
+            )
+            f.write(f" ")
+            f.write(f"{self.registry.cellDict[cell].geometry.toOutputString()}")
             f.write("\n")
 
         # loop over surface dictionary
-        f.write("\n********** SURFACES **********\n")
+        f.write("\nc ********** SURFACES **********\n")
         for surface in self.registry.surfaceDict:
-            f.write(f"{surface} ")
+            f.write(f"")
+            f.write(f"{self.registry.surfaceDict[surface].toOutputString()}")
+            f.write(f" ")
             f.write(f"{self.registry.surfaceDict[surface].__repr__()}")
             f.write("\n")
 
         # todo transformations
 
         # loop over the data card dictionaries
-        f.write("\n********** DATA **********\n")
+        f.write("\nc ********** DATA **********\n")
         # todo replace temp data card with materialDict loop etc.
         f.write("mode p\n")
         f.write("m1   6000 -0.00124  7000 -0.755267\n")
