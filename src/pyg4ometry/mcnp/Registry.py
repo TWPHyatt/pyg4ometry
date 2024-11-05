@@ -74,7 +74,6 @@ class Registry:
         if not material.materialNumber:
             material.materialNumber = self.getNewMaterialNumber()
         self.materialDict[material.materialNumber] = material
-        # self.materialDict[material.materialNumber] = material
 
     def getNewSurfaceNumber(self):
         if len(self.surfaceDict.keys()) == 0:
