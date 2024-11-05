@@ -28,6 +28,7 @@ class Cell:
     def addMaterial(self, material):
         if material in self.reg.materialDict:
             material = self.reg.materialDict[material]
+        self.materialNumber = material.materialNumber
 
     def addGeometry(self, geometry):
         self.geometry = geometry
