@@ -69,11 +69,16 @@ class Registry:
         self.transformationDict[transformation.transformationNumber] = transformation
 
     def addMaterial(self, material):
-        if material.materialNumber in self.materialDict:
-            material.materialNumber = self.getNewMaterialNumber()
-        if not material.materialNumber:
-            material.materialNumber = self.getNewMaterialNumber()
-        self.materialDict[material.materialNumber] = material
+        if material.materialNumber not in self.materialDict:
+            self.materialDict[material.materialNumber] = [material]
+        else:
+            self.materialDict[material.materialNumber].append(material)
+
+    def addVoid(self, material):
+        if 0 not in self.materialDict:
+            self.materialDict[0] = [material]
+        else:
+            self.materialDict[0].append(material)
 
     def getNewSurfaceNumber(self):
         if len(self.surfaceDict.keys()) == 0:
