@@ -4,18 +4,27 @@ class Material:
     """
 
     def __init__(self, materialNumber, density=None, reg=None):
-        self.materialNumber = materialNumber
-        if reg:
-            reg.addMaterial(self)
-            self.reg = reg
         self.density = density
+        if density is None:
+            self.materialNumber = 0
+            if reg:
+                reg.addVoid(self)
+                self.reg = reg
+        else:
+            self.materialNumber = materialNumber
+            if reg:
+                reg.addMaterial(self)
+                self.reg = reg
 
     def __itter__(self, lis):
         for el in range(len(lis)):
             yield lis[el]
 
     def toOutputString(self):  # used in cell card
-        return str(self.materialNumber) + " " + str(self.density)
+        if self.density is None:
+            return str(self.materialNumber) + " " + " "
+        else:
+            return str(self.materialNumber) + " " + str(self.density)
 
 
 #  the rest of the classes are Material-focused DATA Cards

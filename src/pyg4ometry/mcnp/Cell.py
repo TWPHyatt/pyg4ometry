@@ -3,10 +3,23 @@ from .Material import Material
 
 
 class Cell:
-    def __init__(self, surfaces=[], geometry=None, reg=None, cellNumber=None):
+    def __init__(
+        self,
+        surfaces=[],
+        geometry=None,
+        reg=None,
+        cellNumber=None,
+        materialNumber=None,
+        importance=None,
+    ):
         self.surfaceList = surfaces
         self.cellNumber = cellNumber
         self.geometry = geometry
+        self.materialNumber = materialNumber
+        self.materialIndex = None
+        self.importance = []
+        if importance:
+            self.importance = [importance]
         if reg:
             reg.addCell(self)
             self.reg = reg
@@ -26,15 +39,46 @@ class Cell:
         self.addSurfaces(macrobody)
 
     def addMaterial(self, material):
-        if material in self.reg.materialDict:
-            material = self.reg.materialDict[material]
-        self.materialNumber = material.materialNumber
+        temp = [key for key, value in self.reg.materialDict.items() if material in value]
+        self.materialNumber = temp[0]
+        self.materialIndex = self.reg.materialDict[self.materialNumber].index(material)
 
     def addGeometry(self, geometry):
         self.geometry = geometry
 
+    def addImportance(self, importance):
+        if self.materialNumber == 0:
+            importance.xj = 0
+            print("Cell", self.cellNumber, "is void")
+            print(" > Overriding importance and setting to zero.")
+        self.importance.append(importance)
+
     def toOutputString(self):
         return str(self.cellNumber)
+
+
+class IMP:
+    def __init__(self, pl, *xj):
+        self.pl = pl
+        self.xj = xj
+
+    # todo the WWN card (presence of a WWN card will change IMP)
+
+    def toOutputString(self):
+        x = ""
+        if hasattr(self.xj, "__iter__"):
+            print("1) ", self.xj, " - is iter")
+            if len(self.xj) > 1:
+                for j in self.xj:
+                    x += " " + str(j)
+                return "IMP:" + str(self.pl) + x
+            else:
+                x = str(*self.xj)
+                return "IMP:" + str(self.pl) + "=" + x
+        else:
+            print("2) ", self.xj, " - not iter")
+            x = str(self.xj)
+            return "IMP:" + str(self.pl) + "=" + x
 
 
 class Intersection:
