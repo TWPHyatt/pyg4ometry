@@ -47,7 +47,8 @@ class Cell:
         self.geometry = geometry
 
     def addImportance(self, importance):
-        if self.materialNumber == 0:
+        if (self.materialNumber == 0) and (importance.xj != (0,)):
+            print(importance.xj)
             importance.xj = 0
             print("Cell", self.cellNumber, "is void")
             print(" > Overriding importance and setting to zero.")
@@ -62,12 +63,11 @@ class IMP:
         self.pl = pl
         self.xj = xj
 
-    # todo the WWN card (presence of a WWN card will change IMP)
+    # todo the WWN card (presence of a WWN card will change IMP - manual 3.3.6.1)
 
     def toOutputString(self):
         x = ""
         if hasattr(self.xj, "__iter__"):
-            print("1) ", self.xj, " - is iter")
             if len(self.xj) > 1:
                 for j in self.xj:
                     x += " " + str(j)
@@ -76,7 +76,6 @@ class IMP:
                 x = str(*self.xj)
                 return "IMP:" + str(self.pl) + "=" + x
         else:
-            print("2) ", self.xj, " - not iter")
             x = str(self.xj)
             return "IMP:" + str(self.pl) + "=" + x
 
