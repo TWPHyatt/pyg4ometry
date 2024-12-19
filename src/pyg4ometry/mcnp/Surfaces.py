@@ -1,3 +1,16 @@
+import numpy as _np
+from ..pycgal.Point_3 import Point_3_ECER as _Point_3_ECER
+from ..pycgal.Vector_3 import Vector_3_ECER as _Vector_3_ECER
+from ..pycgal.Plane_3 import Plane_3_ECER as _Plane_3_ECER
+from ..pycgal.Nef_polyhedron_3 import Nef_polyhedron_3_ECER as _Nef_polyhedron_3_ECER
+from ..pycgal.Polyhedron_3 import Polyhedron_3_ECER as _Polyhedron_3_ECER
+from ..pycgal import Surface_mesh as _Surface_mesh
+from ..pycgal.Surface_mesh import Surface_mesh_ECER as _Surface_mesh_ECER
+from ..pycgal.Surface_mesh import Surface_mesh_EPECK as _Surface_mesh_EPECK
+from ..pycgal.CGAL import copy_face_graph as _copy_face_graph
+from ..pycgal.core import CSG as _CSG
+
+
 class Surface:
     def __init__(self, reg=None, surfaceNumber=None):
         self.surfaceNumber = surfaceNumber
@@ -22,6 +35,47 @@ class P(Surface):
 
     def __repr__(self):
         return f"P {self.A} {self.B} {self.C} {self.D}"
+
+    def mesh(self):
+        n1 = _Nef_polyhedron_3_ECER(
+            _Plane_3_ECER(_Point_3_ECER(0, 0, 1000000000), _Vector_3_ECER(0, 0, 1))
+        )
+        n2 = _Nef_polyhedron_3_ECER(
+            _Plane_3_ECER(_Point_3_ECER(0, 0, -1000000000), _Vector_3_ECER(0, 0, -1))
+        )
+        n3 = _Nef_polyhedron_3_ECER(
+            _Plane_3_ECER(_Point_3_ECER(0, 1000000000, 0), _Vector_3_ECER(0, 1, 0))
+        )
+        n4 = _Nef_polyhedron_3_ECER(
+            _Plane_3_ECER(_Point_3_ECER(0, -1000000000, 0), _Vector_3_ECER(0, -1, 0))
+        )
+        n5 = _Nef_polyhedron_3_ECER(
+            _Plane_3_ECER(_Point_3_ECER(1000000000, 0, 0), _Vector_3_ECER(1, 0, 0))
+        )
+        n6 = _Nef_polyhedron_3_ECER(
+            _Plane_3_ECER(_Point_3_ECER(-1000000000, 0, 0), _Vector_3_ECER(-1, 0, 0))
+        )
+
+        mag = _np.sqrt(self.A**2 + self.B**2 + self.C**2)
+        n7 = _Nef_polyhedron_3_ECER(
+            _Plane_3_ECER(
+                _Point_3_ECER(self.A, self.B, self.C),
+                _Vector_3_ECER(self.A / mag, self.B / mag, self.C / mag),
+            )
+        )
+
+        n = n1 * n2 * n3 * n4 * n5 * n6 * n7
+
+        p = _Polyhedron_3_ECER()
+        n.convert_to_polyhedron(p)
+
+        sm_ecer = _Surface_mesh_ECER()
+        sm_epeck = _Surface_mesh_EPECK()
+
+        _copy_face_graph(p, sm_ecer)
+        _Surface_mesh.toCGALSurfaceMesh(sm_epeck, sm_ecer)
+
+        return _CSG(sm_epeck)
 
 
 class PX(Surface):

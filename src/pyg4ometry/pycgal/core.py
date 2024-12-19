@@ -18,8 +18,11 @@ import numpy as _np
 
 
 class CSG:
-    def __init__(self):
-        self.sm = Surface_mesh.Surface_mesh_EPECK()
+    def __init__(self, sm=None):
+        if sm is None:
+            self.sm = Surface_mesh.Surface_mesh_EPECK()
+        else:
+            self.sm = sm
 
     @classmethod
     def fromPolygons(cls, polygons, **kwargs):
