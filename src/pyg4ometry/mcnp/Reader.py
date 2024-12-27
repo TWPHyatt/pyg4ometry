@@ -34,40 +34,103 @@ class Reader:
             msg = "There was a problem reading the input file with an unrecognised number of input cards"
             raise RuntimeError(msg)
 
+        # deal with surface card
         for s in self.cardStack[1]:
-            surfaceNum = None
+            print("--------------")
+            parts = s.split()
+            surfaceNum = int(parts[0])
             TRn = None
-            mnemonic = None
-            surfaceDef = None
-            mnemonicBool = False
-            x = s.split()
-            for c in x:
-                if mnemonicBool is True:
-                    surfaceDef += " " + c
+
+            # if the second element is numeric then it is the transformation number
+            # and handle negative
+            if len(parts) > 1 and parts[1].lstrip("-").isnumeric():
+                TRn = parts[1]
+                mnemonicIndex = 2
+                # todo add TR to reg, or bake in?
             else:
-                surfaceNum = x[0]
-            if x[1].isnumeric():
-                TRn = x[1]
-            if not c.isnumeric():
-                print(c, "N")
-            mnemonicBool = True
-            mnemonic = c
-            surfaceDef = ""
-            surfaceDef = surfaceDef.strip()
-            print(x)
-            print(f"|{surfaceNum}| |{TRn}| |{mnemonic}| |{surfaceDef}|")
-            # todo WHY IS MNEMONIC NONE?
+                mnemonicIndex = 1
 
-            # todo change "/" to "_"
+            surfaceMnemonic = parts[mnemonicIndex].upper().replace("/", "_")
+            if surfaceMnemonic == "RHP" or surfaceMnemonic == "HEX":
+                surfaceMnemonic = "RHP_HEX"
 
-            s = self._makeSurface(mnemonic.capitalize(), 10, reg=self.registry)
+            surfaceDef = [float(value) for value in parts[mnemonicIndex + 1 :]]
+            print(f" S = |{surfaceNum}| |{TRn}| |{surfaceMnemonic}| |{surfaceDef}|")
+
+            s = self._makeSurface(
+                surfaceMnemonic, *surfaceDef, reg=self.registry, surfaceNumber=int(surfaceNum)
+            )
             self.registry.addSurface(s)
-            # todo if TR following line add to reg or bake-in
 
-        for cellLine in self.cardStack[0]:
-            print("cell: ", cellLine)
+        # deal with cell card
+        # todo cellNum1 LIKE cellNum2 BUT list
+        cellParams = []  # List to store dictionaries for each cell line
+        for s in self.cardStack[0]:
+            print("--------------")
+            parts = s.split()
+            partsUpper = [part.upper() for part in parts]
+            cellDict = {}
+            toRemove = []
+
+            paramKeywords = [
+                "IMP",
+                "VOL",
+                "PWT",
+                "EXT",
+                "FCL",
+                "WWN",
+                "DXC",
+                "NONU",
+                "PD",
+                "TMP",
+                "U",
+                "TRCL",
+                "LAT",
+                "FILL",
+                "ELPT",
+                "COSY",
+                "BFLCL",
+                "UNC",
+            ]
+
+            # Extract keyword-value pairs
+            for part in partsUpper:
+                for keyword in paramKeywords:
+                    if keyword in part:  # Check if the keyword exists in the part
+                        if "=" in part:  # Split the string on an '='
+                            key, value = part.split("=", 1)
+                            try:
+                                value = float(value)
+                            except ValueError:
+                                pass
+                            cellDict[key] = value
+                            toRemove.append(part)  # Mark part for removal
+            cellParams.append(cellDict)
+
+            # Remove processed parts
+            remainingParts = [part for part in partsUpper if part not in toRemove]
+
+            cellNum = int(remainingParts[0])
+            materialNum = int(remainingParts[1])
+            density = None
+
+            if materialNum != 0:
+                density = remainingParts[2]
+                defIndex = 2
+            else:  # zero material is void
+                defIndex = 1
+
+            geometry = " ".join(remainingParts[defIndex + 1 :])
+
+            params = "TBD"
+
+            print(f" C = |{cellNum}| |{materialNum}| |{density}| |{geometry}| |{params}|")
+
+            print(f" params = {cellDict}")
+
             # c = self._makeCell()
             # self.registry.addCell(c)
+
             # todo if TRCL following line add to reg or bake-in
 
         for dataline in self.cardStack[2]:
@@ -117,7 +180,7 @@ class Reader:
         c = 2
         return c
 
-    def injectWhitespace(self, line):
+    def _injectWhitespace(self, line):
         line = line
         return line
         # give this line to the parser
