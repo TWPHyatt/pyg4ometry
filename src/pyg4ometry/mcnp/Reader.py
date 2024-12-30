@@ -8,7 +8,7 @@ from .CellExpression import (
 
 from .Registry import Registry
 from . import Surfaces
-import os.path
+from . import Cell
 
 
 class Reader:
@@ -16,9 +16,12 @@ class Reader:
     Class to read a MCNP file.
     """
 
-    def __init__(self, filename):
+    def __init__(self, filename, reg=None):
         self.filename = filename
-        self.registry = Registry()
+        if reg:
+            self.registry = reg
+        else:
+            self.registry = Registry()
         self._load()
 
     def getRegistry(self):
@@ -46,7 +49,6 @@ class Reader:
             if len(parts) > 1 and parts[1].lstrip("-").isnumeric():
                 TRn = parts[1]
                 mnemonicIndex = 2
-                # todo add TR to reg, or bake in?
             else:
                 mnemonicIndex = 1
 
@@ -55,15 +57,17 @@ class Reader:
                 surfaceMnemonic = "RHP_HEX"
 
             surfaceDef = [float(value) for value in parts[mnemonicIndex + 1 :]]
+
             print(f" S = |{surfaceNum}| |{TRn}| |{surfaceMnemonic}| |{surfaceDef}|")
 
+            # todo add TR to reg, or bake-in then pass to _makeSurface?
             s = self._makeSurface(
                 surfaceMnemonic, *surfaceDef, reg=self.registry, surfaceNumber=int(surfaceNum)
             )
             self.registry.addSurface(s)
 
         # deal with cell card
-        # todo cellNum1 LIKE cellNum2 BUT list
+        # todo input can be "cellNum1 LIKE cellNum2 BUT list"
         cellParams = []  # List to store dictionaries for each cell line
         for s in self.cardStack[0]:
             print("--------------")
@@ -104,7 +108,7 @@ class Reader:
                             except ValueError:
                                 pass
                             cellDict[key] = value
-                            toRemove.append(part)  # Mark part for removal
+                            toRemove.append(part)  # Mark for removal from string
             cellParams.append(cellDict)
 
             # Remove processed parts
@@ -115,27 +119,57 @@ class Reader:
             density = None
 
             if materialNum != 0:
-                density = remainingParts[2]
+                density = float(remainingParts[2])
                 defIndex = 2
             else:  # zero material is void
                 defIndex = 1
 
-            geometry = " ".join(remainingParts[defIndex + 1 :])
+            geometryStr = " ".join(remainingParts[defIndex + 1 :])
 
-            params = "TBD"
+            geometryStr = self._adjustWhitespace(geometryStr)
 
-            print(f" C = |{cellNum}| |{materialNum}| |{density}| |{geometry}| |{params}|")
+            # geometryObj = paservisitor(geometryStr)
+            geometryObj = 1
 
-            print(f" params = {cellDict}")
+            print(f" C = |{cellNum}| |{materialNum}| |{density}| |{geometryStr}| |{cellDict}|")
 
-            # c = self._makeCell()
-            # self.registry.addCell(c)
+            # todo if TRCL following line add to reg or bake-in, then pass to _makeSurface?
 
-            # todo if TRCL following line add to reg or bake-in
+            surfaceList = []
+            IMP = []
+            for key, value in cellDict.items():
+                if key.startswith("IMP"):  # Check if the key starts with "IMP"
+                    IMP.append(value)  # Append the value to the list
+                    print(f" {key} = {value}")
 
+            # give this line to the parser
+            # that parser-visitor then returns you a cell object
+            # cell object added to registry
+            c = self._makeCell(
+                geometry=geometryObj,
+                surfaces=surfaceList,
+                reg=self.registry,
+                cellNumber=int(cellNum),
+                materialNumber=int(materialNum),
+                density=density,
+                importance=IMP,
+            )
+            self.registry.addCell(c)
+
+        # todo there is a dictionary of the cell keywords parameters and values (add to reg?)
+        print("--------------")
+        for x in cellParams:
+            print(x)
+
+        # deal with data card
         for dataline in self.cardStack[2]:
-            dummy = True
+            print("--------------")
+            print(f" D = |{dataline}|")
             # todo
+
+        # once the objects (surfaces, cells, etc.) have been loaded into the registry by the reader
+        # the registry can be passed to the visuliser
+        # the visulisation goes through and loops through all cells and says, give me a mesh
 
     def _processFile(self, filein):
         """process the input file lines into cardStack"""
@@ -173,23 +207,76 @@ class Reader:
         if s is None:
             msg = "Surface class " + surfaceName + " is not found in Surfaces module."
             raise ValueError(msg)
-
         return s(*args, **kwargs)
 
-    def _makeCell(self):
-        c = 2
-        return c
+    def _makeCell(self, *args, **kwargs):
+        c = Cell
+        if c is None:
+            msg = "Cell class is not found in Cell module."
+            raise ValueError(msg)
+        return c(*args, **kwargs)
 
-    def _injectWhitespace(self, line):
-        line = line
-        return line
-        # give this line to the parser
-        # that parser-visitor then returns you a cell object
-        # cell object added to registry
+    def _adjustWhitespace(self, geometryStr):
+        # if an open parenthesis does not have a space before it, insert it (unless it is a hash)
+        # if an open parenthesis has a space after it, remove it
+        # if a close parenthesis does not have a space after it, insert it
+        # if a close parenthesis has a space before it, remove it
+        # if a colon (union) has a space before it, remove it
+        # if a colon (union) has a space after it, remove it
 
-    # if surface, make the surface object, put it into the registry
-    # if cell, make the cell object, put it into the registry
-    # ...
-    # the output of the reader is the registry
-    # the registry can just be passed to the visuliser
-    # the visulisation goes though and loops though all cells and says, give me a mesh
+        print(f" > IN = |{geometryStr}|")
+
+        if "(" in geometryStr:
+            index = geometryStr.find("(")
+            if index > 0 and geometryStr[index - 1] != " " and geometryStr[index - 1] != "#":
+                print(" > 1")
+                geometryStr = (
+                    geometryStr[:index] + " " + geometryStr[index:]
+                )  # no space before, so add it
+                print(f" > ... |{geometryStr}|")
+        if "(" in geometryStr:
+            index = geometryStr.find("(")
+            if len(geometryStr) > index + 1 and geometryStr[index + 1] == " ":
+                print(" > 2")
+                geometryStr = (
+                    geometryStr[: index + 1] + geometryStr[index + 2 :]
+                )  # space found after, so remove it
+                print(f" > ... |{geometryStr}|")
+
+        if ")" in geometryStr:
+            index = geometryStr.find(")")
+            if index > 0 and geometryStr[index - 1] == " ":
+                print(" > 3")
+                geometryStr = (
+                    geometryStr[: index - 1] + geometryStr[index:]
+                )  # space found before, so remove it
+                print(f" > ... |{geometryStr}|")
+        if ")" in geometryStr:
+            index = geometryStr.find(")")
+            if len(geometryStr) > index + 1 and geometryStr[index + 1] != " ":
+                print(" > 4")
+                geometryStr = (
+                    geometryStr[: index + 1] + " " + geometryStr[index + 1 :]
+                )  # no space after, so add it
+                print(f" > ... |{geometryStr}|")
+
+        if ":" in geometryStr:
+            index = geometryStr.find(":")
+            if index > 0 and geometryStr[index - 1] == " ":
+                print(" > 5")
+                geometryStr = (
+                    geometryStr[: index - 1] + geometryStr[index:]
+                )  # space before, so remove it
+                print(f" > ... |{geometryStr}|")
+        if ":" in geometryStr:
+            index = geometryStr.find(":")
+            if len(geometryStr) > index + 1 and geometryStr[index + 1] == " ":
+                print(" > 6")
+                geometryStr = (
+                    geometryStr[: index + 1] + geometryStr[index + 2 :]
+                )  # space after, so remove it
+                print(f" > ... |{geometryStr}|")
+
+        print(f" > OUT = |{geometryStr}|")
+
+        return geometryStr
