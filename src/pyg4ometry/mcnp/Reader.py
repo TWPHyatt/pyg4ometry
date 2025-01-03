@@ -1,11 +1,12 @@
-import antlr4
+from antlr4 import *
 
 from .CellExpression import (
-    CellVisitor,
     CellParser,
     CellLexer,
+    CellEvalVisitor,
 )
 
+from .CellExpression.CellEvalVisitor import CellEvalVisitor
 from .Registry import Registry
 from . import Surfaces
 from . import Cell
@@ -61,10 +62,10 @@ class Reader:
             print(f" S = |{surfaceNum}| |{TRn}| |{surfaceMnemonic}| |{surfaceDef}|")
 
             # todo add TR to reg, or bake-in then pass to _makeSurface?
+            # make the surface and with the reg kwarg will auto add to registry
             s = self._makeSurface(
                 surfaceMnemonic, *surfaceDef, reg=self.registry, surfaceNumber=int(surfaceNum)
             )
-            self.registry.addSurface(s)
 
         # deal with cell card
         # todo input can be "cellNum1 LIKE cellNum2 BUT list"
@@ -128,8 +129,7 @@ class Reader:
 
             geometryStr = self._adjustWhitespace(geometryStr)
 
-            # geometryObj = paservisitor(geometryStr)
-            geometryObj = 1
+            geometryObj = self._makeGeometry(geometryStr)
 
             print(f" C = |{cellNum}| |{materialNum}| |{density}| |{geometryStr}| |{cellDict}|")
 
@@ -142,9 +142,7 @@ class Reader:
                     IMP.append(value)  # Append the value to the list
                     print(f" {key} = {value}")
 
-            # give this line to the parser
-            # that parser-visitor then returns you a cell object
-            # cell object added to registry
+            # make the cell and with the reg kwarg will auto add to registry
             c = self._makeCell(
                 geometry=geometryObj,
                 surfaces=surfaceList,
@@ -154,7 +152,6 @@ class Reader:
                 density=density,
                 importance=IMP,
             )
-            self.registry.addCell(c)
 
         # todo there is a dictionary of the cell keywords parameters and values (add to reg?)
         print("--------------")
@@ -224,59 +221,86 @@ class Reader:
         # if a colon (union) has a space before it, remove it
         # if a colon (union) has a space after it, remove it
 
-        print(f" > IN = |{geometryStr}|")
+        # print(f" > IN = |{geometryStr}|")
 
         if "(" in geometryStr:
             index = geometryStr.find("(")
             if index > 0 and geometryStr[index - 1] != " " and geometryStr[index - 1] != "#":
-                print(" > 1")
+                # print(" > 1")
                 geometryStr = (
                     geometryStr[:index] + " " + geometryStr[index:]
                 )  # no space before, so add it
-                print(f" > ... |{geometryStr}|")
+                # print(f" > ... |{geometryStr}|")
         if "(" in geometryStr:
             index = geometryStr.find("(")
             if len(geometryStr) > index + 1 and geometryStr[index + 1] == " ":
-                print(" > 2")
+                # print(" > 2")
                 geometryStr = (
                     geometryStr[: index + 1] + geometryStr[index + 2 :]
                 )  # space found after, so remove it
-                print(f" > ... |{geometryStr}|")
+                # print(f" > ... |{geometryStr}|")
 
         if ")" in geometryStr:
             index = geometryStr.find(")")
             if index > 0 and geometryStr[index - 1] == " ":
-                print(" > 3")
+                # print(" > 3")
                 geometryStr = (
                     geometryStr[: index - 1] + geometryStr[index:]
                 )  # space found before, so remove it
-                print(f" > ... |{geometryStr}|")
+                # print(f" > ... |{geometryStr}|")
         if ")" in geometryStr:
             index = geometryStr.find(")")
             if len(geometryStr) > index + 1 and geometryStr[index + 1] != " ":
-                print(" > 4")
+                # print(" > 4")
                 geometryStr = (
                     geometryStr[: index + 1] + " " + geometryStr[index + 1 :]
                 )  # no space after, so add it
-                print(f" > ... |{geometryStr}|")
+                # print(f" > ... |{geometryStr}|")
 
         if ":" in geometryStr:
             index = geometryStr.find(":")
             if index > 0 and geometryStr[index - 1] == " ":
-                print(" > 5")
+                # print(" > 5")
                 geometryStr = (
                     geometryStr[: index - 1] + geometryStr[index:]
                 )  # space before, so remove it
-                print(f" > ... |{geometryStr}|")
+                # print(f" > ... |{geometryStr}|")
         if ":" in geometryStr:
             index = geometryStr.find(":")
             if len(geometryStr) > index + 1 and geometryStr[index + 1] == " ":
-                print(" > 6")
+                # print(" > 6")
                 geometryStr = (
                     geometryStr[: index + 1] + geometryStr[index + 2 :]
                 )  # space after, so remove it
-                print(f" > ... |{geometryStr}|")
+                # print(f" > ... |{geometryStr}|")
 
-        print(f" > OUT = |{geometryStr}|")
+        # print(f" > OUT = |{geometryStr}|")
 
         return geometryStr
+
+    def _makeGeometry(self, expression):
+
+        print("EXPRESSION", expression)
+
+        # read the input expression
+        inputStream = InputStream(expression)
+
+        # initialise lexer
+        lexer = CellLexer(inputStream)
+        # initialise TokenStream
+        tokenStream = CommonTokenStream(lexer)
+
+        # initialise parser
+        parser = CellParser(tokenStream)
+
+        # parse the expression
+        tree = parser.expr()
+
+        # toStringTree
+        treeView = tree.toStringTree(recog=parser)
+        # print("Parse Tree: ", treeView)
+
+        visitor = CellEvalVisitor(self.registry)
+        result = visitor.visitExpr(tree)
+        print("RESULT ", result)
+        return result
