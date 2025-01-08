@@ -10,6 +10,11 @@ from ..pycgal.Surface_mesh import Surface_mesh_EPECK as _Surface_mesh_EPECK
 from ..pycgal.CGAL import copy_face_graph as _copy_face_graph
 from ..pycgal.core import CSG as _CSG
 
+# temp for mesh()
+from ..geant4.Registry import Registry as g4Reg
+from ..geant4.solid import Orb
+from ..geant4.solid import EllipticalTube
+
 
 class Surface:
     def __init__(self, reg=None, surfaceNumber=None):
@@ -129,6 +134,20 @@ class SO(Surface):
     def __repr__(self):
         return f"SO {self.R}"
 
+    def mesh(self):
+        reg = g4Reg()
+        solid = Orb(
+            name="",
+            pRMax=self.R,
+            registry=reg,
+        )
+
+        mesh = solid.mesh()
+        disp = [0.0, 0.0, 0.0]
+        mesh.translate(disp)
+
+        return mesh
+
 
 class S(Surface):
     """
@@ -145,6 +164,20 @@ class S(Surface):
     def __repr__(self):
         return f"S {self.x} {self.y} {self.z} {self.R}"
 
+    def mesh(self):
+        reg = g4Reg()
+        solid = Orb(
+            name="",
+            pRMax=self.R,
+            registry=reg,
+        )
+
+        mesh = solid.mesh()
+        disp = [0.0, 0.0, 0.0]
+        mesh.translate(disp)
+
+        return mesh
+
 
 class SX(Surface):
     """
@@ -158,6 +191,16 @@ class SX(Surface):
 
     def __repr__(self):
         return f"SX {self.x} {self.R}"
+
+    def mesh(self):
+        reg = g4Reg()
+        s = Orb(
+            name="",
+            pRMax=self.R,
+            registry=reg,
+        )
+        mesh = s.mesh()
+        return mesh
 
 
 class SY(Surface):
@@ -173,6 +216,20 @@ class SY(Surface):
     def __repr__(self):
         return f"SY {self.y} {self.R}"
 
+    def mesh(self):
+        reg = g4Reg()
+        solid = Orb(
+            name="",
+            pRMax=self.R,
+            registry=reg,
+        )
+
+        mesh = solid.mesh()
+        disp = [0.0, 0.0, 0.0]
+        mesh.translate(disp)
+
+        return mesh
+
 
 class SZ(Surface):
     """
@@ -186,6 +243,20 @@ class SZ(Surface):
 
     def __repr__(self):
         return f"SZ {self.z} {self.R}"
+
+    def mesh(self):
+        reg = g4Reg()
+        solid = Orb(
+            name="",
+            pRMax=self.R,
+            registry=reg,
+        )
+
+        mesh = solid.mesh()
+        disp = [0.0, 0.0, 0.0]
+        mesh.translate(disp)
+
+        return mesh
 
 
 class C_X(Surface):
@@ -202,6 +273,25 @@ class C_X(Surface):
     def __repr__(self):
         return f"C/X {self.y} {self.z} {self.R}"
 
+    def mesh(self):
+        reg = g4Reg()
+        solid = EllipticalTube(
+            name="",
+            pDx=self.R,
+            pDy=self.R,
+            pDz=1000,
+            registry=reg,
+        )
+
+        mesh = solid.mesh()
+        axisIn = [0, 1, 0]
+        angleDeg = 90
+        mesh.rotate(axisIn, angleDeg)
+        disp = [0.0, self.y, self.z]
+        mesh.translate(disp)
+
+        return mesh
+
 
 class C_Y(Surface):
     """
@@ -216,6 +306,25 @@ class C_Y(Surface):
 
     def __repr__(self):
         return f"C/Y {self.x} {self.z} {self.R}"
+
+    def mesh(self):
+        reg = g4Reg()
+        solid = EllipticalTube(
+            name="",
+            pDx=self.R,
+            pDy=self.R,
+            pDz=1000,
+            registry=reg,
+        )
+
+        mesh = solid.mesh()
+        axisIn = [1, 0, 0]
+        angleDeg = 90
+        mesh.rotate(axisIn, angleDeg)
+        disp = [self.x, 0.0, self.z]
+        mesh.translate(disp)
+
+        return mesh
 
 
 class C_Z(Surface):
@@ -232,6 +341,22 @@ class C_Z(Surface):
     def __repr__(self):
         return f"C/Z {self.x} {self.y} {self.R}"
 
+    def mesh(self):
+        reg = g4Reg()
+        solid = EllipticalTube(
+            name="",
+            pDx=self.R,
+            pDy=self.R,
+            pDz=1000,
+            registry=reg,
+        )
+
+        mesh = solid.mesh()
+        disp = [self.x, self.y, 0.0]
+        mesh.translate(disp)
+
+        return mesh
+
 
 class CX(Surface):
     """
@@ -244,6 +369,23 @@ class CX(Surface):
 
     def __repr__(self):
         return f"CX {self.R}"
+
+    def mesh(self):
+        reg = g4Reg()
+        solid = EllipticalTube(
+            name="",
+            pDx=self.R,
+            pDy=self.R,
+            pDz=1000,
+            registry=reg,
+        )
+
+        mesh = solid.mesh()
+        axisIn = [0, 1, 0]
+        angleDeg = 90
+        mesh.rotate(axisIn, angleDeg)
+
+        return mesh
 
 
 class CY(Surface):
@@ -258,6 +400,23 @@ class CY(Surface):
     def __repr__(self):
         return f"CY {self.R}"
 
+    def mesh(self):
+        reg = g4Reg()
+        solid = EllipticalTube(
+            name="",
+            pDx=self.R,
+            pDy=self.R,
+            pDz=1000,
+            registry=reg,
+        )
+
+        mesh = solid.mesh()
+        axisIn = [1, 0, 0]
+        angleDeg = 90
+        mesh.rotate(axisIn, angleDeg)
+
+        return mesh
+
 
 class CZ(Surface):
     """
@@ -270,6 +429,20 @@ class CZ(Surface):
 
     def __repr__(self):
         return f"CZ {self.R}"
+
+    def mesh(self):
+        reg = g4Reg()
+        solid = EllipticalTube(
+            name="",
+            pDx=self.R,
+            pDy=self.R,
+            pDz=1000,
+            registry=reg,
+        )
+
+        mesh = solid.mesh()
+
+        return mesh
 
 
 """ surface: Cone
