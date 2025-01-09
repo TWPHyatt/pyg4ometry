@@ -15,6 +15,8 @@ from ..geant4.Registry import Registry as g4Reg
 from ..geant4.solid import Orb
 from ..geant4.solid import EllipticalTube
 
+inf = 100
+
 
 class Surface:
     def __init__(self, reg=None, surfaceNumber=None):
@@ -43,22 +45,22 @@ class P(Surface):
 
     def mesh(self):
         n1 = _Nef_polyhedron_3_ECER(
-            _Plane_3_ECER(_Point_3_ECER(0, 0, 1000000000), _Vector_3_ECER(0, 0, 1))
+            _Plane_3_ECER(_Point_3_ECER(0, 0, inf), _Vector_3_ECER(0, 0, 1))
         )
         n2 = _Nef_polyhedron_3_ECER(
-            _Plane_3_ECER(_Point_3_ECER(0, 0, -1000000000), _Vector_3_ECER(0, 0, -1))
+            _Plane_3_ECER(_Point_3_ECER(0, 0, -inf), _Vector_3_ECER(0, 0, -1))
         )
         n3 = _Nef_polyhedron_3_ECER(
-            _Plane_3_ECER(_Point_3_ECER(0, 1000000000, 0), _Vector_3_ECER(0, 1, 0))
+            _Plane_3_ECER(_Point_3_ECER(0, inf, 0), _Vector_3_ECER(0, 1, 0))
         )
         n4 = _Nef_polyhedron_3_ECER(
-            _Plane_3_ECER(_Point_3_ECER(0, -1000000000, 0), _Vector_3_ECER(0, -1, 0))
+            _Plane_3_ECER(_Point_3_ECER(0, -inf, 0), _Vector_3_ECER(0, -1, 0))
         )
         n5 = _Nef_polyhedron_3_ECER(
-            _Plane_3_ECER(_Point_3_ECER(1000000000, 0, 0), _Vector_3_ECER(1, 0, 0))
+            _Plane_3_ECER(_Point_3_ECER(inf, 0, 0), _Vector_3_ECER(1, 0, 0))
         )
         n6 = _Nef_polyhedron_3_ECER(
-            _Plane_3_ECER(_Point_3_ECER(-1000000000, 0, 0), _Vector_3_ECER(-1, 0, 0))
+            _Plane_3_ECER(_Point_3_ECER(-inf, 0, 0), _Vector_3_ECER(-1, 0, 0))
         )
 
         mag = _np.sqrt(self.A**2 + self.B**2 + self.C**2)
@@ -80,7 +82,21 @@ class P(Surface):
         _copy_face_graph(p, sm_ecer)
         _Surface_mesh.toCGALSurfaceMesh(sm_epeck, sm_ecer)
 
-        return _CSG(sm_epeck)
+        mesh = _CSG(sm_epeck)
+        mesh.translate([-self.A, -self.B, -self.C])
+        DA = 0
+        DB = 0
+        DC = 0
+        if self.A != 0:
+            DA = self.D / self.A
+        if self.B != 0:
+            DB = self.D / self.B
+        if self.C != 0:
+            DC = self.D / self.C
+
+        mesh.translate([DA, DB, DC])
+
+        return mesh
 
 
 class PX(Surface):
@@ -95,6 +111,18 @@ class PX(Surface):
     def __repr__(self):
         return f"PX {self.D}"
 
+    def mesh(self):
+        solid = P(
+            A=1,
+            B=0,
+            C=0,
+            D=self.D,
+        )
+
+        mesh = solid.mesh()
+
+        return mesh
+
 
 class PY(Surface):
     """
@@ -108,6 +136,18 @@ class PY(Surface):
     def __repr__(self):
         return f"PY {self.D}"
 
+    def mesh(self):
+        solid = P(
+            A=0,
+            B=1,
+            C=0,
+            D=self.D,
+        )
+
+        mesh = solid.mesh()
+
+        return mesh
+
 
 class PZ(Surface):
     """
@@ -120,6 +160,18 @@ class PZ(Surface):
 
     def __repr__(self):
         return f"PZ {self.D}"
+
+    def mesh(self):
+        solid = P(
+            A=0,
+            B=0,
+            C=1,
+            D=self.D,
+        )
+
+        mesh = solid.mesh()
+
+        return mesh
 
 
 class SO(Surface):
@@ -194,12 +246,19 @@ class SX(Surface):
 
     def mesh(self):
         reg = g4Reg()
-        s = Orb(
+        solid = Orb(
             name="",
             pRMax=self.R,
             registry=reg,
         )
-        mesh = s.mesh()
+
+        mesh = solid.mesh()
+        axisIn = [0, 1, 0]
+        angleDeg = 90
+        mesh.rotate(axisIn, angleDeg)
+        disp = [self.x, 0.0, 0.0]
+        mesh.translate(disp)
+
         return mesh
 
 
@@ -225,7 +284,10 @@ class SY(Surface):
         )
 
         mesh = solid.mesh()
-        disp = [0.0, 0.0, 0.0]
+        axisIn = [1, 0, 0]
+        angleDeg = 90
+        mesh.rotate(axisIn, angleDeg)
+        disp = [0.0, self.y, 0.0]
         mesh.translate(disp)
 
         return mesh
@@ -253,7 +315,7 @@ class SZ(Surface):
         )
 
         mesh = solid.mesh()
-        disp = [0.0, 0.0, 0.0]
+        disp = [0.0, 0.0, self.z]
         mesh.translate(disp)
 
         return mesh
@@ -279,7 +341,7 @@ class C_X(Surface):
             name="",
             pDx=self.R,
             pDy=self.R,
-            pDz=1000,
+            pDz=inf,
             registry=reg,
         )
 
@@ -313,7 +375,7 @@ class C_Y(Surface):
             name="",
             pDx=self.R,
             pDy=self.R,
-            pDz=1000,
+            pDz=inf,
             registry=reg,
         )
 
@@ -347,7 +409,7 @@ class C_Z(Surface):
             name="",
             pDx=self.R,
             pDy=self.R,
-            pDz=1000,
+            pDz=inf,
             registry=reg,
         )
 
@@ -376,7 +438,7 @@ class CX(Surface):
             name="",
             pDx=self.R,
             pDy=self.R,
-            pDz=1000,
+            pDz=inf,
             registry=reg,
         )
 
@@ -406,7 +468,7 @@ class CY(Surface):
             name="",
             pDx=self.R,
             pDy=self.R,
-            pDz=1000,
+            pDz=inf,
             registry=reg,
         )
 
@@ -436,7 +498,7 @@ class CZ(Surface):
             name="",
             pDx=self.R,
             pDy=self.R,
-            pDz=1000,
+            pDz=inf,
             registry=reg,
         )
 
