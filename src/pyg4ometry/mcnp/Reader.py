@@ -164,10 +164,6 @@ class Reader:
             print(f" D = |{dataline}|")
             # todo
 
-        # once the objects (surfaces, cells, etc.) have been loaded into the registry by the reader
-        # the registry can be passed to the visuliser
-        # the visulisation goes through and loops through all cells and says, give me a mesh
-
     def _processFile(self, filein):
         """process the input file lines into cardStack"""
         with open(filein) as f:
