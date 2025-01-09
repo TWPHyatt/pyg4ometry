@@ -195,8 +195,6 @@ class SO(Surface):
         )
 
         mesh = solid.mesh()
-        disp = [0.0, 0.0, 0.0]
-        mesh.translate(disp)
 
         return mesh
 
@@ -225,7 +223,7 @@ class S(Surface):
         )
 
         mesh = solid.mesh()
-        disp = [0.0, 0.0, 0.0]
+        disp = [self.x, self.y, self.z]
         mesh.translate(disp)
 
         return mesh
@@ -253,10 +251,7 @@ class SX(Surface):
         )
 
         mesh = solid.mesh()
-        axisIn = [0, 1, 0]
-        angleDeg = 90
-        mesh.rotate(axisIn, angleDeg)
-        disp = [self.x, 0.0, 0.0]
+        disp = [self.x, 0, 0]
         mesh.translate(disp)
 
         return mesh
@@ -284,10 +279,7 @@ class SY(Surface):
         )
 
         mesh = solid.mesh()
-        axisIn = [1, 0, 0]
-        angleDeg = 90
-        mesh.rotate(axisIn, angleDeg)
-        disp = [0.0, self.y, 0.0]
+        disp = [0, self.y, 0]
         mesh.translate(disp)
 
         return mesh
@@ -315,7 +307,7 @@ class SZ(Surface):
         )
 
         mesh = solid.mesh()
-        disp = [0.0, 0.0, self.z]
+        disp = [0, 0, self.z]
         mesh.translate(disp)
 
         return mesh
