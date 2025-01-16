@@ -15,7 +15,7 @@ from ..geant4.Registry import Registry as g4Reg
 from ..geant4.solid import Orb
 from ..geant4.solid import EllipticalTube
 
-inf = 100
+inf = 1e1
 
 
 class Surface:
@@ -66,8 +66,8 @@ class P(Surface):
         mag = _np.sqrt(self.A**2 + self.B**2 + self.C**2)
         n7 = _Nef_polyhedron_3_ECER(
             _Plane_3_ECER(
-                _Point_3_ECER(self.A, self.B, self.C),
-                _Vector_3_ECER(self.A / mag, self.B / mag, self.C / mag),
+                _Point_3_ECER(self.A / mag * self.D, self.B / mag * self.D, self.C / mag * self.D),
+                _Vector_3_ECER(-self.A / mag, -self.B / mag, -self.C / mag),
             )
         )
 
@@ -83,18 +83,6 @@ class P(Surface):
         _Surface_mesh.toCGALSurfaceMesh(sm_epeck, sm_ecer)
 
         mesh = _CSG(sm_epeck)
-        mesh.translate([-self.A, -self.B, -self.C])
-        DA = 0
-        DB = 0
-        DC = 0
-        if self.A != 0:
-            DA = self.D / self.A
-        if self.B != 0:
-            DB = self.D / self.B
-        if self.C != 0:
-            DC = self.D / self.C
-
-        mesh.translate([DA, DB, DC])
 
         return mesh
 
@@ -188,13 +176,15 @@ class SO(Surface):
 
     def mesh(self):
         reg = g4Reg()
-        solid = Orb(
+        orb = Orb(
             name="",
             pRMax=self.R,
             registry=reg,
         )
+        orb_mesh = orb.mesh()
+        bigBox = orb_mesh.cube(center=[0, 0, 0], radius=[inf, inf, inf])  # big box (universe)
 
-        mesh = solid.mesh()
+        mesh = bigBox.subtract(orb_mesh)
 
         return mesh
 
@@ -225,6 +215,10 @@ class S(Surface):
         mesh = solid.mesh()
         disp = [self.x, self.y, self.z]
         mesh.translate(disp)
+
+        bigBox = mesh.cube(center=[0, 0, 0], radius=[inf, inf, inf])  # big box (universe)
+
+        mesh = bigBox.subtract(mesh)
 
         return mesh
 
