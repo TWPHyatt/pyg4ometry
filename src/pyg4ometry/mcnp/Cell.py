@@ -68,48 +68,7 @@ class Cell:
         return str(self.cellNumber)
 
     def mesh(self):
-        """
-        Generate a single combined mesh for the geometry of this cell.
-        """
-        print("Starting mesh generation for geometry:", self.geometry)
-        combined_mesh = self.process_geometry(self.geometry)
-        print("Completed mesh generation.")
-        return combined_mesh
-
-    def process_geometry(self, geometry):
-        """
-        Process the geometry tree and return the mesh object
-        """
-        print("geometry:", geometry.toOutputString())
-        if isinstance(geometry, Surface):  # surface atom
-            print(f"Processing surface: {geometry}")
-            return geometry.mesh()  # generate the surface mesh
-
-        elif isinstance(geometry, Union):  # Union
-            print("Processing union", geometry.left, geometry.right)
-            left_mesh = self.process_geometry(geometry.left)
-            right_mesh = self.process_geometry(geometry.right)
-            return left_mesh.union(right_mesh)  # perform union on the meshes
-
-        elif isinstance(geometry, Intersection):  # intersection
-            print("Processing intersection", geometry.left, geometry.right)
-            left_mesh = self.process_geometry(geometry.left)
-            right_mesh = self.process_geometry(geometry.right)
-            return left_mesh.intersect(right_mesh)  # perform intersection on the meshes
-
-        elif isinstance(geometry, Complement):  # complement
-            print("Processing complement", geometry.item)
-            child_geometry = geometry.item
-            print("Child geometry:", child_geometry)
-            right_mesh = self.process_geometry(child_geometry)
-            left_mesh = right_mesh.cube(
-                center=[0, 0, 0], radius=[inf, inf, inf]
-            )  # big box (universe)0
-            return left_mesh.subtract(right_mesh)
-
-        else:
-            msg = f"Unsupported geometry type: {type(geometry)}"
-            raise ValueError(msg)
+        return self.geometry.mesh()
 
 
 class IMP:
@@ -155,6 +114,9 @@ class Intersection:
         else:
             return self.left.toOutputString() + " " + self.right.toOutputString()
 
+    def mesh(self):
+        return self.left.mesh().intersect(self.right.mesh())
+
 
 class Union:
     """
@@ -168,6 +130,9 @@ class Union:
 
     def toOutputString(self):
         return self.left.toOutputString() + ":" + self.right.toOutputString()
+
+    def mesh(self):
+        return self.left.mesh().union(self.right.mesh())
 
 
 class Complement:
@@ -186,3 +151,9 @@ class Complement:
             return "#" + str(self.item.cellNumber)
         else:
             return "#" + self.item.toOutputString()
+
+    def mesh(self):
+        mesh = self.item.mesh()
+        bigBox = mesh.cube(center=[0, 0, 0], radius=[inf, inf, inf])  # big box (universe)
+
+        return bigBox.subtract(mesh)
