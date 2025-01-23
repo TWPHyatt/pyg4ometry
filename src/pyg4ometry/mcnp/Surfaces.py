@@ -14,8 +14,9 @@ from ..pycgal.core import CSG as _CSG
 from ..geant4.Registry import Registry as g4Reg
 from ..geant4.solid import Orb
 from ..geant4.solid import EllipticalTube
+from ..geant4.solid import EllipticalCone
 
-inf = 1e1
+inf = 1e2
 
 
 class Surface:
@@ -176,15 +177,15 @@ class SO(Surface):
 
     def mesh(self):
         reg = g4Reg()
-        orb = Orb(
+        solid = Orb(
             name="",
             pRMax=self.R,
             registry=reg,
         )
-        orb_mesh = orb.mesh()
-        bigBox = orb_mesh.cube(center=[0, 0, 0], radius=[inf, inf, inf])  # big box (universe)
+        mesh = solid.mesh()
+        # bigBox = orb_mesh.cube(center=[0, 0, 0], radius=[inf, inf, inf])  # big box (universe)
 
-        mesh = bigBox.subtract(orb_mesh)
+        # mesh = bigBox.subtract(mesh)
 
         return mesh
 
@@ -216,9 +217,9 @@ class S(Surface):
         disp = [self.x, self.y, self.z]
         mesh.translate(disp)
 
-        bigBox = mesh.cube(center=[0, 0, 0], radius=[inf, inf, inf])  # big box (universe)
+        # bigBox = mesh.cube(center=[0, 0, 0], radius=[inf, inf, inf])  # big box (universe)
 
-        mesh = bigBox.subtract(mesh)
+        # mesh = bigBox.subtract(mesh)
 
         return mesh
 
@@ -565,6 +566,33 @@ class K_Z(Surface):
 
     def __repr__(self):
         return f"K/Z {self.x} {self.y} {self.z} {self.t_sqr} {self.sign}"
+
+    def mesh(self):
+        reg = g4Reg()
+        solid = EllipticalCone(
+            name="",
+            pxSemiAxis=self.t_sqr**0.5,  # t * zMax
+            pySemiAxis=self.t_sqr**0.5,  # t * zMax
+            zMax=inf,  # zMax is infinite
+            pzTopCut=inf * 0.9999999999,  # 0 for full cone
+            registry=reg,
+        )
+        mesh = solid.mesh()
+
+        if self.sign > 0:
+            axisIn = [0, 1, 0]
+            angleDeg = 180
+            mesh.rotate(axisIn, angleDeg)
+            disp = [0, 0, inf * 0.9999999999]
+            mesh.translate(disp)
+        else:
+            disp = [0, 0, inf * -0.9999999999]
+            mesh.translate(disp)
+
+        disp = [self.x, self.y, self.z]
+        mesh.translate(disp)
+
+        return mesh
 
 
 class KX(Surface):
