@@ -1028,13 +1028,13 @@ class BOX(Surface):
             C=self.a1z,
             D=self.a1x * (self.vx + self.a1x)
             + self.a1y * (self.vy + self.a1y)
-            + self.C * (self.vz + self.a1z),
+            + self.a1z * (self.vz + self.a1z),
         )
         p3 = P(
             A=self.a2x,
             B=self.a2y,
             C=self.a2z,
-            D=(self.a2x * self.vx) + (self.a2y * self.vy) + (self.a1z * self.vz),
+            D=(self.a2x * self.vx) + (self.a2y * self.vy) + (self.a2z * self.vz),
         )
         p4 = P(
             A=self.a2x,
@@ -1042,13 +1042,13 @@ class BOX(Surface):
             C=self.a2z,
             D=self.a2x * (self.vx + self.a2x)
             + self.a2y * (self.vy + self.a2y)
-            + self.C * (self.vz + self.a3z),
+            + self.a2z * (self.vz + self.a3z),
         )
         p5 = P(
             A=self.a3x,
             B=self.a3y,
             C=self.a3z,
-            D=(self.a3x * self.vx) + (self.a3y * self.vy) + (self.a1z * self.vz),
+            D=(self.a3x * self.vx) + (self.a3y * self.vy) + (self.a3z * self.vz),
         )
         p6 = P(
             A=self.a3x,
@@ -1056,17 +1056,19 @@ class BOX(Surface):
             C=self.a3z,
             D=self.a3x * (self.vx + self.a3x)
             + self.a3y * (self.vy + self.a3y)
-            + self.C * (self.vz + self.a3z),
+            + self.a3z * (self.vz + self.a3z),
         )
 
-        geom1 = intersection(p1, complement(p2))
-        geom2 = intersection(p3, complement(p4))
-        geom3 = intersection(p5, complement(p6))
+        from .Cell import Intersection, Complement, Union
 
-        geom4 = intersection(geom1, geom2)
-        geom5 = intersection(geom3, geom4)
+        geom1 = Intersection(p1, Complement(p2))
+        geom2 = Intersection(p3, Complement(p4))
+        geom3 = Intersection(p5, Complement(p6))
 
-        mesh = True
+        geom4 = Intersection(geom1, geom2)
+        geom5 = Intersection(geom3, geom4)
+
+        mesh = geom5.mesh()
 
         return mesh
 
