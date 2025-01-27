@@ -10,11 +10,12 @@ from ..pycgal.Surface_mesh import Surface_mesh_EPECK as _Surface_mesh_EPECK
 from ..pycgal.CGAL import copy_face_graph as _copy_face_graph
 from ..pycgal.core import CSG as _CSG
 
-# temp for mesh()
+# for mesh()
 from ..geant4.Registry import Registry as g4Reg
 from ..geant4.solid import Orb
 from ..geant4.solid import EllipticalTube
 from ..geant4.solid import EllipticalCone
+from ..geant4.solid import Torus
 
 inf = 1e2
 
@@ -184,7 +185,6 @@ class SO(Surface):
         )
         mesh = solid.mesh()
         # bigBox = orb_mesh.cube(center=[0, 0, 0], radius=[inf, inf, inf])  # big box (universe)
-
         # mesh = bigBox.subtract(mesh)
 
         return mesh
@@ -216,9 +216,7 @@ class S(Surface):
         mesh = solid.mesh()
         disp = [self.x, self.y, self.z]
         mesh.translate(disp)
-
         # bigBox = mesh.cube(center=[0, 0, 0], radius=[inf, inf, inf])  # big box (universe)
-
         # mesh = bigBox.subtract(mesh)
 
         return mesh
@@ -334,7 +332,7 @@ class C_X(Surface):
 
         mesh = solid.mesh()
         axisIn = [0, 1, 0]
-        angleDeg = 90
+        angleDeg = -90
         mesh.rotate(axisIn, angleDeg)
         disp = [0.0, self.y, self.z]
         mesh.translate(disp)
@@ -431,7 +429,7 @@ class CX(Surface):
 
         mesh = solid.mesh()
         axisIn = [0, 1, 0]
-        angleDeg = 90
+        angleDeg = -90
         mesh.rotate(axisIn, angleDeg)
 
         return mesh
@@ -527,6 +525,37 @@ class K_X(Surface):
     def __repr__(self):
         return f"K/X {self.x} {self.y} {self.z} {self.t_sqr} {self.sign}"
 
+    def mesh(self):
+        reg = g4Reg()
+        solid = EllipticalCone(
+            name="",
+            pxSemiAxis=self.t_sqr**0.5,
+            pySemiAxis=self.t_sqr**0.5,
+            zMax=inf,
+            pzTopCut=inf * 0.9999999999,
+            registry=reg,
+        )
+        mesh = solid.mesh()
+
+        if self.sign > 0:
+            axisIn = [0, 1, 0]
+            angleDeg = 180
+            mesh.rotate(axisIn, angleDeg)
+            disp = [0, 0, inf * 0.9999999999]
+            mesh.translate(disp)
+        else:
+            disp = [0, 0, inf * -0.9999999999]
+            mesh.translate(disp)
+
+        axisIn = [0, 1, 0]
+        angleDeg = -90
+        mesh.rotate(axisIn, angleDeg)
+
+        disp = [self.x, self.y, self.z]
+        mesh.translate(disp)
+
+        return mesh
+
 
 class K_Y(Surface):
     """
@@ -546,6 +575,37 @@ class K_Y(Surface):
 
     def __repr__(self):
         return f"K/Y {self.x} {self.y} {self.z} {self.t_sqr} {self.sign}"
+
+    def mesh(self):
+        reg = g4Reg()
+        solid = EllipticalCone(
+            name="",
+            pxSemiAxis=self.t_sqr**0.5,
+            pySemiAxis=self.t_sqr**0.5,
+            zMax=inf,
+            pzTopCut=inf * 0.9999999999,
+            registry=reg,
+        )
+        mesh = solid.mesh()
+
+        if self.sign > 0:
+            axisIn = [0, 1, 0]
+            angleDeg = 180
+            mesh.rotate(axisIn, angleDeg)
+            disp = [0, 0, inf * 0.9999999999]
+            mesh.translate(disp)
+        else:
+            disp = [0, 0, inf * -0.9999999999]
+            mesh.translate(disp)
+
+        axisIn = [1, 0, 0]
+        angleDeg = 90
+        mesh.rotate(axisIn, angleDeg)
+
+        disp = [self.x, self.y, self.z]
+        mesh.translate(disp)
+
+        return mesh
 
 
 class K_Z(Surface):
@@ -571,10 +631,10 @@ class K_Z(Surface):
         reg = g4Reg()
         solid = EllipticalCone(
             name="",
-            pxSemiAxis=self.t_sqr**0.5,  # t * zMax
-            pySemiAxis=self.t_sqr**0.5,  # t * zMax
-            zMax=inf,  # zMax is infinite
-            pzTopCut=inf * 0.9999999999,  # 0 for full cone
+            pxSemiAxis=self.t_sqr**0.5,
+            pySemiAxis=self.t_sqr**0.5,
+            zMax=inf,
+            pzTopCut=inf * 0.9999999999,
             registry=reg,
         )
         mesh = solid.mesh()
@@ -612,6 +672,37 @@ class KX(Surface):
     def __repr__(self):
         return f"KX {self.x} {self.t_sqr} {self.sign}"
 
+    def mesh(self):
+        reg = g4Reg()
+        solid = EllipticalCone(
+            name="",
+            pxSemiAxis=self.t_sqr**0.5,
+            pySemiAxis=self.t_sqr**0.5,
+            zMax=inf,
+            pzTopCut=inf * 0.9999999999,
+            registry=reg,
+        )
+        mesh = solid.mesh()
+
+        if self.sign > 0:
+            axisIn = [0, 1, 0]
+            angleDeg = 180
+            mesh.rotate(axisIn, angleDeg)
+            disp = [0, 0, inf * 0.9999999999]
+            mesh.translate(disp)
+        else:
+            disp = [0, 0, inf * -0.9999999999]
+            mesh.translate(disp)
+
+        axisIn = [0, 1, 0]
+        angleDeg = -90
+        mesh.rotate(axisIn, angleDeg)
+
+        disp = [self.x, 0, 0]
+        mesh.translate(disp)
+
+        return mesh
+
 
 class KY(Surface):
     """
@@ -630,6 +721,37 @@ class KY(Surface):
     def __repr__(self):
         return f"KY {self.y} {self.t_sqr} {self.sign}"
 
+    def mesh(self):
+        reg = g4Reg()
+        solid = EllipticalCone(
+            name="",
+            pxSemiAxis=self.t_sqr**0.5,
+            pySemiAxis=self.t_sqr**0.5,
+            zMax=inf,
+            pzTopCut=inf * 0.9999999999,
+            registry=reg,
+        )
+        mesh = solid.mesh()
+
+        if self.sign > 0:
+            axisIn = [0, 1, 0]
+            angleDeg = 180
+            mesh.rotate(axisIn, angleDeg)
+            disp = [0, 0, inf * 0.9999999999]
+            mesh.translate(disp)
+        else:
+            disp = [0, 0, inf * -0.9999999999]
+            mesh.translate(disp)
+
+        axisIn = [1, 0, 0]
+        angleDeg = 90
+        mesh.rotate(axisIn, angleDeg)
+
+        disp = [0, self.y, 0]
+        mesh.translate(disp)
+
+        return mesh
+
 
 class KZ(Surface):
     """
@@ -647,6 +769,33 @@ class KZ(Surface):
 
     def __repr__(self):
         return f"KZ {self.z} {self.t_sqr} {self.sign}"
+
+    def mesh(self):
+        reg = g4Reg()
+        solid = EllipticalCone(
+            name="",
+            pxSemiAxis=self.t_sqr**0.5,
+            pySemiAxis=self.t_sqr**0.5,
+            zMax=inf,
+            pzTopCut=inf * 0.9999999999,
+            registry=reg,
+        )
+        mesh = solid.mesh()
+
+        if self.sign > 0:
+            axisIn = [0, 1, 0]
+            angleDeg = 180
+            mesh.rotate(axisIn, angleDeg)
+            disp = [0, 0, inf * 0.9999999999]
+            mesh.translate(disp)
+        else:
+            disp = [0, 0, inf * -0.9999999999]
+            mesh.translate(disp)
+
+        disp = [0, 0, self.z]
+        mesh.translate(disp)
+
+        return mesh
 
 
 class SQ(Surface):
@@ -720,6 +869,30 @@ class TX(Surface):
     def __repr__(self):
         return f"TX {self.x} {self.y} {self.z} {self.A} {self.B} {self.C}"
 
+    def mesh(self):
+        reg = g4Reg()
+        solid = Torus(
+            name="",
+            pRmin=0,
+            pRmax=self.C,
+            pRtor=self.A,
+            pSPhi=0,
+            pDPhi=2 * _np.pi,
+            registry=reg,
+            nslice=50,
+            nstack=30,
+        )
+        mesh = solid.mesh()
+
+        axisIn = [0, 1, 0]
+        angleDeg = -90
+        mesh.rotate(axisIn, angleDeg)
+
+        disp = [self.x, self.y, self.z]
+        mesh.translate(disp)
+
+        return mesh
+
 
 class TY(Surface):
     """
@@ -740,6 +913,30 @@ class TY(Surface):
     def __repr__(self):
         return f"TY {self.x} {self.y} {self.z} {self.A} {self.B} {self.C}"
 
+    def mesh(self):
+        reg = g4Reg()
+        solid = Torus(
+            name="",
+            pRmin=0,
+            pRmax=self.C,
+            pRtor=self.A,
+            pSPhi=0,
+            pDPhi=2 * _np.pi,
+            registry=reg,
+            nslice=50,
+            nstack=30,
+        )
+        mesh = solid.mesh()
+
+        axisIn = [1, 0, 0]
+        angleDeg = 90
+        mesh.rotate(axisIn, angleDeg)
+
+        disp = [self.x, self.y, self.z]
+        mesh.translate(disp)
+
+        return mesh
+
 
 class TZ(Surface):
     """
@@ -759,6 +956,26 @@ class TZ(Surface):
 
     def __repr__(self):
         return f"TZ {self.x} {self.y} {self.z} {self.A} {self.B} {self.C} "
+
+    def mesh(self):
+        reg = g4Reg()
+        solid = Torus(
+            name="",
+            pRmin=0,
+            pRmax=self.C,
+            pRtor=self.A,
+            pSPhi=0,
+            pDPhi=2 * _np.pi,
+            registry=reg,
+            nslice=50,
+            nstack=30,
+        )
+
+        mesh = solid.mesh()
+        disp = [self.x, self.y, self.z]
+        mesh.translate(disp)
+
+        return mesh
 
 
 class BOX(Surface):
