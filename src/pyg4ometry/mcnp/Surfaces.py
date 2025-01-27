@@ -1013,6 +1013,63 @@ class BOX(Surface):
             f" {self.a2x} {self.a2y} {self.a2z} {self.a3x} {self.a3y} {self.a3z}"
         )
 
+    def mesh(self):
+        reg = g4Reg()
+
+        p1 = P(
+            A=self.a1x,
+            B=self.a1y,
+            C=self.a1z,
+            D=(self.a1x * self.vx) + (self.a1y * self.vy) + (self.a1z * self.vz),
+        )
+        p2 = P(
+            A=self.a1x,
+            B=self.a1y,
+            C=self.a1z,
+            D=self.a1x * (self.vx + self.a1x)
+            + self.a1y * (self.vy + self.a1y)
+            + self.C * (self.vz + self.a1z),
+        )
+        p3 = P(
+            A=self.a2x,
+            B=self.a2y,
+            C=self.a2z,
+            D=(self.a2x * self.vx) + (self.a2y * self.vy) + (self.a1z * self.vz),
+        )
+        p4 = P(
+            A=self.a2x,
+            B=self.a2y,
+            C=self.a2z,
+            D=self.a2x * (self.vx + self.a2x)
+            + self.a2y * (self.vy + self.a2y)
+            + self.C * (self.vz + self.a3z),
+        )
+        p5 = P(
+            A=self.a3x,
+            B=self.a3y,
+            C=self.a3z,
+            D=(self.a3x * self.vx) + (self.a3y * self.vy) + (self.a1z * self.vz),
+        )
+        p6 = P(
+            A=self.a3x,
+            B=self.a3y,
+            C=self.a3z,
+            D=self.a3x * (self.vx + self.a3x)
+            + self.a3y * (self.vy + self.a3y)
+            + self.C * (self.vz + self.a3z),
+        )
+
+        geom1 = intersection(p1, complement(p2))
+        geom2 = intersection(p3, complement(p4))
+        geom3 = intersection(p5, complement(p6))
+
+        geom4 = intersection(geom1, geom2)
+        geom5 = intersection(geom3, geom4)
+
+        mesh = True
+
+        return mesh
+
 
 class RPP(Surface):
     """
