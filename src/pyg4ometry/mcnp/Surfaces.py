@@ -30,6 +30,171 @@ class Surface:
         return str(self.surfaceNumber)
 
 
+class X(Surface):
+    """
+    Surface Point for a surface symmetric about the x-axis
+    Used to describe surfaces by coordinate points rather
+    than by equation coefficients.
+    """
+
+    def __init__(self, *coordinatePairs, reg=None, surfaceNumber=None):
+        self.xi = []  # coordinate of point i
+        self.ri = []  # ri = sqrt((yi**2 + zi**2)**2)
+        for i in coordinatePairs:
+            if not isinstance(i, tuple):
+                errorString = (
+                    "every coordinate pair should be specified in a tuple: (x1,r1), (x2,r2), ..."
+                )
+                raise TypeError(errorString)
+            if not len(i) == 2:
+                errorString = "every coordinate pair needs x and r: (xi,ri)"
+                raise TypeError(errorString)
+            self.xi.append(i[0])
+            self.ri.append(i[1])
+
+    def __repr__(self):
+        return "X " + " ".join(f"{x} {r}" for x, r in zip(self.xi, self.ri))
+
+    def mesh(self):
+        return True
+
+
+class Y(Surface):
+    """
+    Surface Point for a surface symmetric about the y-axis
+    Used to describe surfaces by coordinate points rather
+    than by equation coefficients.
+    """
+
+    def __init__(self, *coordinatePairs, reg=None, surfaceNumber=None):
+        self.yi = []  # coordinate of point i
+        self.ri = []  # ri = sqrt((yi**2 + zi**2)**2)
+        for i in coordinatePairs:
+            if not isinstance(i, tuple):
+                errorString = (
+                    "every coordinate pair should be specified in a tuple: (y1,r1), (y2,r2), ..."
+                )
+                raise TypeError(errorString)
+            if not len(i) == 2:
+                errorString = "every coordinate pair needs y and r: (yi,ri)"
+                raise TypeError(errorString)
+            self.yi.append(i[0])
+            self.ri.append(i[1])
+
+    def __repr__(self):
+        return "Y " + " ".join(f"{y} {r}" for y, r in zip(self.yi, self.ri))
+
+    def mesh(self):
+        return True
+
+
+class Z(Surface):
+    """
+    Axisymmetric Surface defined by points (z-axis of symmetry)
+    Used to describe surfaces by coordinate points rather than by equation coefficients.
+
+    :param coordinatePairs: tuples: (r1, y1), (r2, y2), ...
+    :param r: radial distance from the axis
+    :param y: coordinate along the axis of symmetry
+
+    1 coord pair - Planar Surface (PY, PX, PZ)
+    2 coord pairs - Linear Surface (CY, CX, CZ, etc.)
+    3 coord pairs - Quadratic Surface (SQ, SO, etc.)
+    """
+
+    def __init__(self, *coordinatePairs, reg=None, surfaceNumber=None):
+        self.zi = []  # coordinate of point i
+        self.ri = []  # ri = sqrt((yi**2 + zi**2)**2)
+        for i in coordinatePairs:
+            if not isinstance(i, tuple):
+                msg = "every coordinate pair should be specified in a tuple: (z1,r1), (z2,r2), ..."
+                raise TypeError(msg)
+            if not len(i) == 2:
+                msg = "every coordinate pair needs y and r: (zi,ri)"
+                raise TypeError(msg)
+            self.zi.append(i[0])
+            self.ri.append(i[1])
+
+    def __repr__(self):
+        return "Z " + " ".join(f"{z} {r}" for z, r in zip(self.zi, self.ri))
+
+    def _surfaceFromPoints(self):
+        """
+        SURFACE EQUATION:
+        ri = a*zi**2 + b*zi + c
+          a determines if the surface is quadratic
+          b determines if the surface has a linear component
+          c represents a constant shift
+
+        [ z1**2  z1  1 ] [ a ]   [ r1 ]
+        [ z2**2  z2  1 ] [ b ] = [ r2 ]
+        [ z3**2  z3  1 ] [ c ]   [ r3 ]
+
+        a = 0 and b = 0 >>> ri = c (r is const)
+        a = 0 and b != 0 >>> ri = b*zi + c (linear eq)
+        a != 0 >>> ri = a*zi**2 + b*zi + c (quadratic)
+
+        ONE coord pair:
+          a = 0 and b != 0 >>> plane
+        TWO coord pairs:
+          a = 0 and b = 0 >>> cylinder
+          a = 0 and b != 0 >>> plane
+          a != 0 >>> cone
+        THREE coord pairs:
+          a = 0 and b = 0 >>> const radius (cylinder)
+          a = 0 and b != 0 >>> linear r and z relationship (plane)
+          a > 0 and b != 0 >>> positive curvature (sphere)
+          a < 0 and b != 0 >>> negative curvature (cone)
+          a != 0 and b = 0 >>> quadratic with no linear term (SQ)
+        """
+
+        numPoints = len(self.ri)
+
+        # one coordinate pair
+        if numPoints == 1:
+            return PZ()
+
+        # two coordinate pairs
+        elif numPoints == 2:
+            coeffs = self.linearCoeffs()
+            if coeffs is None:
+                return KZ()
+            else:
+                b, c = coeffs
+                if b == 0:
+                    return CZ()
+                else:
+                    return PZ()
+
+        # three coordinate pairs
+        elif numPoints == 3:
+            coeffs = self.fit_quadratic()
+            if coeffs is None:
+                msg = "invalid quadratic coefficients for surface Z"
+                raise TypeError(msg)
+            else:
+                a, b, c = coeffs
+                if a == 0:  # plane or cylinder
+                    if b == 0:
+                        return CZ()
+                    else:
+                        return PZ()
+                if a > 0:
+                    return SZ()
+
+        # coordinate pair(s) < 1 or > 3 invalid
+        else:
+            msg = "invalid number of coordinate points for surface Z"
+            raise TypeError(msg)
+
+    def mesh(self):
+
+        solid = self.surfaceFromPoint()
+        mesh = solid.mesh()
+
+        return mesh
+
+
 class P(Surface):
     """
     Plane (general)
