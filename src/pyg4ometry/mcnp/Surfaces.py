@@ -30,7 +30,51 @@ class Surface:
         return str(self.surfaceNumber)
 
 
-class X(Surface):
+class Coefficients(Surface):
+    def __init__(self):
+        super().__init__()
+        self.numPoints = 0
+        self.a = None
+        self.b = None
+        self.c = None
+
+    def calcCoeffs(self, pi, ri):
+        """
+        Determine the coefficients a, b, and c of the quadratic equation: a*p**2 + b*p + c = r**2
+            MATRIX M               Vector V
+        | p1**2  p1  1 |   | a |   | v1 |
+        | p2**2  p2  1 |   | b | = | v2 |
+        | p3**2  p3  1 |   | c |   | v3 |
+
+        """
+        self.numPoints = len(ri)
+        M = _np.zeros((3, 3))  # matrix
+        V = _np.zeros(3)  # vector
+
+        # fill the matrix and vector with the coord pairs
+        for i in range(self.numPoints):
+            M[i] = [pi[i] ** 2, pi[i], 1]
+            V[i] = ri[i] ** 2
+
+        if self.numPoints == 1:
+            M[1] = [0, 1, 0]
+            M[2] = [0, 0, 1]
+            V[1] = 0
+            V[2] = V[0]
+        elif self.numPoints == 2:
+            M[2] = [0, 0, 1]
+            V[2] = V[1]
+
+        # number of coordinate pair(s) < 1 or > 3 invalid
+        else:
+            msg = "invalid number of coordinate points for surface Z"
+            raise TypeError(msg)
+
+        # solve for the coefficients
+        self.a, self.b, self.c = _np.linalg.solve(M, V)
+
+
+class X(Coefficients):
     """
     Surface Point for a surface symmetric about the x-axis
     Used to describe surfaces by coordinate points rather
@@ -38,6 +82,7 @@ class X(Surface):
     """
 
     def __init__(self, *coordinatePairs, reg=None, surfaceNumber=None):
+        super().__init__()
         self.xi = []  # coordinate of point i
         self.ri = []  # ri = sqrt((yi**2 + zi**2)**2)
         for i in coordinatePairs:
@@ -59,7 +104,7 @@ class X(Surface):
         return True
 
 
-class Y(Surface):
+class Y(Coefficients):
     """
     Surface Point for a surface symmetric about the y-axis
     Used to describe surfaces by coordinate points rather
@@ -67,6 +112,7 @@ class Y(Surface):
     """
 
     def __init__(self, *coordinatePairs, reg=None, surfaceNumber=None):
+        super().__init__()
         self.yi = []  # coordinate of point i
         self.ri = []  # ri = sqrt((yi**2 + zi**2)**2)
         for i in coordinatePairs:
@@ -88,7 +134,7 @@ class Y(Surface):
         return True
 
 
-class Z(Surface):
+class Z(Coefficients):
     """
     Axisymmetric Surface defined by points (z-axis of symmetry)
     Used to describe surfaces by coordinate points rather than by equation coefficients.
@@ -103,6 +149,7 @@ class Z(Surface):
     """
 
     def __init__(self, *coordinatePairs, reg=None, surfaceNumber=None):
+        super().__init__()
         self.zi = []  # coordinate of point i
         self.ri = []  # ri = sqrt((yi**2 + zi**2)**2)
         for i in coordinatePairs:
@@ -139,7 +186,7 @@ class Z(Surface):
         TWO coord pairs:
           a = 0 and b = 0 >>> cylinder
           a = 0 and b != 0 >>> plane
-          a != 0 >>> cone
+          WRONG a != 0 >>> cone
         THREE coord pairs:
           a = 0 and b = 0 >>> const radius (cylinder)
           a = 0 and b != 0 >>> linear r and z relationship (plane)
@@ -148,50 +195,77 @@ class Z(Surface):
           a != 0 and b = 0 >>> quadratic with no linear term (SQ)
         """
 
-        numPoints = len(self.ri)
+        self.calcCoeffs(self.zi, self.ri)
 
         # one coordinate pair
-        if numPoints == 1:
-            return PZ()
+        if self.numPoints == 1:
+            r1 = self.ri[0]  # distance from axis to plane
+            return PZ(D=r1)
 
         # two coordinate pairs
-        elif numPoints == 2:
-            coeffs = self.linearCoeffs()
-            if coeffs is None:
-                return KZ()
+        elif self.numPoints == 2:
+            r1, r2 = self.ri[0], self.ri[1]
+            z1, z2 = self.zi[0], self.zi[1]
+            if self.a == 0 and self.b == 0:
+                # r1 should be the same as r2
+                return CZ(R=r1)  # cylinder
+            elif self.a == 0 and self.b != 0:
+                # r1 should be the same as r2
+                return PZ(D=r1)  # plane
             else:
-                b, c = coeffs
-                if b == 0:
-                    return CZ()
+
+                t = (r2 - r1) / (z2 - z1)
+                if r2 > r1:  # expanding cone
+                    sheet = +1  # positive sheet
+                if r2 < r1:  # contracting cone
+                    sheet = -1  # negative sheet
                 else:
-                    return PZ()
+                    sheet = 0  # impossible as this is a plane...
+                    msg = "Z surface, 2 coordinate pairs, cone surface r1 = r2 invalid"
+                    raise TypeError(msg)
+                vertex = z1 - (r1 / t)  # vertex position on z-axis
+                return KZ(z=vertex, t_sqr=t**2, sign=sheet)  # cone
 
         # three coordinate pairs
-        elif numPoints == 3:
-            coeffs = self.fit_quadratic()
-            if coeffs is None:
-                msg = "invalid quadratic coefficients for surface Z"
-                raise TypeError(msg)
-            else:
-                a, b, c = coeffs
-                if a == 0:  # plane or cylinder
-                    if b == 0:
-                        return CZ()
-                    else:
-                        return PZ()
-                if a > 0:
-                    return SZ()
+        elif self.numPoints == 3:
+            r1, r2, r3 = self.ri[0], self.ri[1], self.ri[2]
+            z1, z2, z3 = self.zi[0], self.zi[1], self.zi[2]
+            if self.a == 0 and self.b == 0:
+                # r1 should be the same as r2 and r3
+                return CZ(R=r1)  # cylinder
+            elif self.a == 0 and self.b != 0:
+                # r1 should be the same as r2 and r3
+                return PZ(D=r1)  # plane
+            elif self.a > 0 and self.b != 0:
+                zc = ((z2**2 - z1**2) + (r2**2 - r1**2)) / (
+                    2 * (z2 - z1)
+                )  # centre of sphere along z-axis
+                radius = (z1**2 - 2 * z1 * zc + zc**2 + r1**2) ** 0.5
+                return SZ(z=zc, R=radius)
+            elif self.a < 0 and self.b != 0:
+                t = (r3 - r2) / (z3 - z2)
+                if r3 > r2:  # expanding cone
+                    sheet = +1  # positive sheet
+                if r3 < r2:  # contracting cone
+                    sheet = -1  # negative sheet
+                else:
+                    sheet = 0  # impossible as this is a plane...
+                    msg = "Z surface, 2 coordinate pairs, cone surface r1 = r2 invalid"
+                    raise TypeError(msg)
+                vertex = z1 - (r1 / t)  # vertex position on z-axis
+                return KZ(z=vertex, t_sqr=t**2, sign=sheet)  # cone
+            elif self.a != 0 and self.b == 0:
+                z0 = (-1 * self.b) / (2 * self.a)  # displacement along z-axis
+                return SQ(x=0, y=0, z=z0, A=self.a, B=self.b, C=self.c, D=0, E=0, F=0, G=-1)
 
-        # coordinate pair(s) < 1 or > 3 invalid
+        # number of coordinate pair(s) < 1 or > 3 invalid
         else:
             msg = "invalid number of coordinate points for surface Z"
             raise TypeError(msg)
 
     def mesh(self):
-
-        solid = self.surfaceFromPoint()
+        solid = self._surfaceFromPoints()
         mesh = solid.mesh()
-
         return mesh
 
 
