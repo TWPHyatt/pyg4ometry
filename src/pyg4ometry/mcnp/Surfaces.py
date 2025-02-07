@@ -246,7 +246,9 @@ class X(Coefficients):
         return "X " + " ".join(f"{x} {r}" for x, r in zip(self.xi, self.ri))
 
     def mesh(self):
-        return True
+        solid = self._surfaceFromPoints("x", self.xi, self.ri)
+        mesh = solid.mesh()
+        return mesh
 
 
 class Y(Coefficients):
@@ -276,7 +278,9 @@ class Y(Coefficients):
         return "Y " + " ".join(f"{y} {r}" for y, r in zip(self.yi, self.ri))
 
     def mesh(self):
-        return True
+        solid = self._surfaceFromPoints("y", self.yi, self.ri)
+        mesh = solid.mesh()
+        return mesh
 
 
 class Z(Coefficients):
