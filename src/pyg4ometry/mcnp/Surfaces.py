@@ -38,7 +38,7 @@ class Coefficients(Surface):
         self.b = None
         self.c = None
 
-    def calcCoeffs(self, pi, ri):
+    def _calcCoeffs(self, pi, ri):
         """
         Determine the coefficients a, b, and c of the quadratic equation: a*p**2 + b*p + c = r**2
             MATRIX M               Vector V
@@ -67,7 +67,7 @@ class Coefficients(Surface):
 
         # number of coordinate pair(s) < 1 or > 3 invalid
         else:
-            msg = "invalid number of coordinate points for surface Z"
+            msg = "invalid number of coordinate pairs for surface Z"
             raise TypeError(msg)
 
         # solve for the coefficients
@@ -103,61 +103,92 @@ class Coefficients(Surface):
           a != 0 and b = 0 >>> quadratic with no linear term (SQ)
         """
 
-        self.calcCoeffs(pi, ri)
+        self._calcCoeffs(pi, ri)
 
         # one coordinate pair
         if self.numPoints == 1:
             print("POINTS = 1")
             r1 = ri[0]  # distance from axis to plane
-            if isinstance(xyz, X):
-                return PX(D=r1)
-            if isinstance(xyz, Y):
-                return PY(D=r1)
-            if isinstance(xyz, Z):
-                return PZ(D=r1)
+            # if isinstance(xyz, X):
+            if xyz == "x":
+                return PX(D=r1)  # x plane
+            if xyz == "y":
+                return PY(D=r1)  # y plane
+            if xyz == "z":
+                return PZ(D=r1)  # z plane
 
         # two coordinate pairs
         elif self.numPoints == 2:
             r1, r2 = ri[0], ri[1]
-            z1, z2 = pi[0], pi[1]
+            p1, p2 = pi[0], pi[1]
             if self.a == 0 and self.b == 0:
                 # r1 should be the same as r2
-                return CZ(R=r1)  # cylinder
+                if xyz == "x":
+                    return CX(R=r1)  # x cylinder
+                if xyz == "y":
+                    return CY(R=r1)  # y cylinder
+                if xyz == "z":
+                    return CZ(R=r1)  # z cylinder
             elif self.a == 0 and self.b != 0:
                 # r1 should be the same as r2
-                return PZ(D=r1)  # plane
+                if xyz == "x":
+                    return PX(D=r1)  # x plane
+                if xyz == "y":
+                    return PY(D=r1)  # y plane
+                if xyz == "z":
+                    return PZ(D=r1)  # z plane
             else:
 
-                t = (r2 - r1) / (z2 - z1)
+                t = (r2 - r1) / (p2 - p1)
                 if r2 > r1:  # expanding cone
                     sheet = +1  # positive sheet
                 if r2 < r1:  # contracting cone
                     sheet = -1  # negative sheet
                 else:
-                    sheet = 0  # impossible as this is a plane...
+                    sheet = 0  # impossible as this is a plane
                     msg = "Z surface, 2 coordinate pairs, cone surface r1 = r2 invalid"
                     raise TypeError(msg)
-                vertex = z1 - (r1 / t)  # vertex position on z-axis
-                return KZ(z=vertex, t_sqr=t**2, sign=sheet)  # cone
+                vertex = p1 - (r1 / t)  # vertex position on z-axis
+                if xyz == "x":
+                    return KX(x=vertex, t_sqr=t**2, sign=sheet)  # x cone
+                if xyz == "y":
+                    return KY(y=vertex, t_sqr=t**2, sign=sheet)  # y cone
+                if xyz == "z":
+                    return KZ(z=vertex, t_sqr=t**2, sign=sheet)  # z cone
 
         # three coordinate pairs
         elif self.numPoints == 3:
             r1, r2, r3 = ri[0], ri[1], ri[2]
-            z1, z2, z3 = pi[0], pi[1], pi[2]
+            p1, p2, p3 = pi[0], pi[1], pi[2]
             if self.a == 0 and self.b == 0:
                 # r1 should be the same as r2 and r3
-                return CZ(R=r1)  # cylinder
+                if xyz == "x":
+                    return CX(R=r1)  # x cylinder
+                if xyz == "y":
+                    return CY(R=r1)  # y cylinder
+                if xyz == "z":
+                    return CZ(R=r1)  # z cylinder
             elif self.a == 0 and self.b != 0:
                 # r1 should be the same as r2 and r3
-                return PZ(D=r1)  # plane
+                if xyz == "x":
+                    return PX(D=r1)  # x plane
+                if xyz == "y":
+                    return PY(D=r1)  # y plane
+                if xyz == "z":
+                    return PZ(D=r1)  # z plane
             elif self.a > 0 and self.b != 0:
-                zc = ((z2**2 - z1**2) + (r2**2 - r1**2)) / (
-                    2 * (z2 - z1)
-                )  # centre of sphere along z-axis
-                radius = (z1**2 - 2 * z1 * zc + zc**2 + r1**2) ** 0.5
-                return SZ(z=zc, R=radius)
+                pc = ((p2**2 - p1**2) + (r2**2 - r1**2)) / (
+                    2 * (p2 - p1)
+                )  # pc -> centre of sphere along xyz-axis
+                radius = (p1**2 - 2 * p1 * pc + pc**2 + r1**2) ** 0.5
+                if xyz == "x":
+                    return SX(x=pc, R=radius)  # x sphere
+                if xyz == "y":
+                    return SY(y=pc, R=radius)  # y sphere
+                if xyz == "z":
+                    return SZ(z=pc, R=radius)  # z sphere
             elif self.a < 0 and self.b != 0:
-                t = (r3 - r2) / (z3 - z2)
+                t = (r3 - r2) / (p3 - p2)
                 if r3 > r2:  # expanding cone
                     sheet = +1  # positive sheet
                 if r3 < r2:  # contracting cone
@@ -166,11 +197,21 @@ class Coefficients(Surface):
                     sheet = 0  # impossible as this is a plane...
                     msg = "Z surface, 2 coordinate pairs, cone surface r1 = r2 invalid"
                     raise TypeError(msg)
-                vertex = z1 - (r1 / t)  # vertex position on z-axis
-                return KZ(z=vertex, t_sqr=t**2, sign=sheet)  # cone
+                vertex = p1 - (r1 / t)  # vertex position on xyz-axis
+                if xyz == "x":
+                    return KX(x=vertex, t_sqr=t**2, sign=sheet)  # x cone
+                if xyz == "y":
+                    return KY(y=vertex, t_sqr=t**2, sign=sheet)  # y cone
+                if xyz == "z":
+                    return KZ(z=vertex, t_sqr=t**2, sign=sheet)  # z cone
             elif self.a != 0 and self.b == 0:
-                z0 = (-1 * self.b) / (2 * self.a)  # displacement along z-axis
-                return SQ(x=0, y=0, z=z0, A=self.a, B=self.b, C=self.c, D=0, E=0, F=0, G=-1)
+                p0 = (-1 * self.b) / (2 * self.a)  # p0 -> displacement along xyz-axis
+                if xyz == "x":
+                    return SQ(x=p0, y=0, z=0, A=self.a, B=self.b, C=self.c, D=0, E=0, F=0, G=-1)
+                if xyz == "y":
+                    return SQ(x=0, y=p0, z=0, A=self.a, B=self.b, C=self.c, D=0, E=0, F=0, G=-1)
+                if xyz == "z":
+                    return SQ(x=0, y=0, z=p0, A=self.a, B=self.b, C=self.c, D=0, E=0, F=0, G=-1)
 
         # number of coordinate pair(s) < 1 or > 3 invalid
         else:
@@ -270,7 +311,7 @@ class Z(Coefficients):
         return "Z " + " ".join(f"{z} {r}" for z, r in zip(self.zi, self.ri))
 
     def mesh(self):
-        solid = self._surfaceFromPoints(self, self.zi, self.ri)
+        solid = self._surfaceFromPoints("z", self.zi, self.ri)
         mesh = solid.mesh()
         return mesh
 
