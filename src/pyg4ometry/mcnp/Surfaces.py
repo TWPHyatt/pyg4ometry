@@ -38,83 +38,80 @@ class Coefficients(Surface):
         self.b = None
         self.c = None
 
-    def _calcCoeffs(self, pi, ri):
+    def _calcCoeffs(self, axis, pi, ri):
         """
-        Determine the coefficients a, b, and c of the quadratic equation: a*p**2 + b*p + c = r**2
-            MATRIX M               Vector V
-        | p1**2  p1  1 |   | a |   | v1 |
-        | p2**2  p2  1 |   | b | = | v2 |
-        | p3**2  p3  1 |   | c |   | v3 |
+        Compute the coefficients A, B, C, D, E, F, G, H, J, K of the general quadric (GQ surface)
+        given data points in the form (pi, ri) and the axis type 'X', 'Y', or 'Z'.
+
+        GQ -> Ax^2 + By^2 + Cz^2 + Dxy + Eyz + Fxy + Gx + Hy + Jz + K = 0
+
+        axisymmetric input
+        X: ri = sqrt(yi^2 + zi^2) -> GQ -> Ax^2 + By^2 + Cz^2 + Dxy + Fzx + Gx + Hy + Jz + K = 0   (no Eyz mixed term)
+        Y: ri = sqrt(xi^2 + zi^2) -> GQ -> Ax^2 + By^2 + Cz^2 + Dxy + Eyz + Gx + Hy + Jz + K = 0   (no Fzx mixed term)
+        Z: ri = sqrt(xi^2 + yi^2) -> GQ -> Ax^2 + By^2 + Cz^2 + Eyz + Fzx + Gx + Hy + Jz + K = 0   (no Dxy mixed term)
+
+        GQ -> matrix M * vector C = vector of zeros
+
+        matrix M                                                vector C    vector zeros
+        | x1^2  y1^2  z1^2  x1y1  y1z1  z1x1  x1  y1  z1  1 |   | A |       | 0 |
+        | x2^2  y2^2  z2^2  x2y2  y2z2  z2x2  x2  y2  z2  1 |   | B |   =   | 0 |
+        | x3^2  y3^3  z3^2  x3y3  y3z3  z3x3  x3  y3  z3  1 |   | C |       | 0 |
+                                                                | D |
+                                                                | E |
+                                                                | F |
+                                                                | G |
+                                                                | H |
+                                                                | J |
+
+        Solve for coefficients (C vector)
 
         """
-        self.numPoints = len(ri)
-        M = _np.zeros((3, 3))  # matrix
-        V = _np.zeros(3)  # vector
+        M = []
+        data = zip(pi, ri)
 
-        # fill the matrix and vector with the coord pairs
-        for i in range(self.numPoints):
-            M[i] = [pi[i] ** 2, pi[i], 1]
-            V[i] = ri[i] ** 2
+        for p, r in data:
+            r2 = r**2  # ri^2
+            x2, y2, z2, xy, yz, zx, x, y, z, one = 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
 
-        if self.numPoints == 1:
-            M[1] = [0, 1, 0]
-            M[2] = [0, 0, 1]
-            V[1] = 0
-            V[2] = V[0]
-        elif self.numPoints == 2:
-            M[2] = [0, 0, 1]
-            V[2] = V[1]
+            if axis == "x":
+                x2, y2, z2, zx, x, y, z = p**2, r2, r2, p * z, p, 0, 0  # No E term
+            elif axis == "y":
+                x2, y2, z2, xy, y, x, z = r2, p**2, r2, p * x, p, 0, 0  # No F term
+            elif axis == "z":
+                x2, y2, z2, yz, zx, y, z = r2, r2, p**2, p * y, p * x, 0, p  # No D term
+            else:
+                msg = "Axis must be x, y, or z"
+                raise ValueError(msg)
 
-        # number of coordinate pair(s) < 1 or > 3 invalid
-        else:
-            msg = "invalid number of coordinate pairs for surface Z"
-            raise TypeError(msg)
+            M.append([x2, y2, z2, xy, yz, zx, x, y, z, one])
 
-        # solve for the coefficients
-        self.a, self.b, self.c = _np.linalg.solve(M, V)
+        M = _np.array(M)
 
-    def _surfaceFromPoints(self, xyz, pi, ri):
-        """
-        SURFACE EQUATION:
-        ri = a*zi**2 + b*zi + c
-          a determines if the surface is quadratic
-          b determines if the surface has a linear component
-          c represents a constant shift
+        # solve
+        U, S, Vt = _np.linalg.svd(M)
+        coeffs = Vt[-1, :]
 
-        [ z1**2  z1  1 ] [ a ]   [ r1 ]
-        [ z2**2  z2  1 ] [ b ] = [ r2 ]
-        [ z3**2  z3  1 ] [ c ]   [ r3 ]
+        # normalise
+        coeffs /= coeffs[-1]
 
-        a = 0 and b = 0 >>> ri = c (r is const)
-        a = 0 and b != 0 >>> ri = b*zi + c (linear eq)
-        a != 0 >>> ri = a*zi**2 + b*zi + c (quadratic)
+        return coeffs
 
-        ONE coord pair:
-          a = 0 and b != 0 >>> plane
-        TWO coord pairs:
-          a = 0 and b = 0 >>> cylinder
-          a = 0 and b != 0 >>> plane
-          WRONG a != 0 >>> cone
-        THREE coord pairs:
-          a = 0 and b = 0 >>> const radius (cylinder)
-          a = 0 and b != 0 >>> linear r and z relationship (plane)
-          a > 0 and b != 0 >>> positive curvature (sphere)
-          a < 0 and b != 0 >>> negative curvature (cone)
-          a != 0 and b = 0 >>> quadratic with no linear term (SQ)
-        """
+    def _surfaceFromPoints(self, axis, pi, ri):
+        """ """
 
-        self._calcCoeffs(pi, ri)
+        print(self._calcCoeffs(axis, pi, ri))
+        print("coeffs found")
 
         # one coordinate pair
         if self.numPoints == 1:
             print("POINTS = 1")
             r1 = ri[0]  # distance from axis to plane
             # if isinstance(xyz, X):
-            if xyz == "x":
+            if axis == "x":
                 return PX(D=r1)  # x plane
-            if xyz == "y":
+            if axis == "y":
                 return PY(D=r1)  # y plane
-            if xyz == "z":
+            if axis == "z":
                 return PZ(D=r1)  # z plane
 
         # two coordinate pairs
@@ -123,19 +120,19 @@ class Coefficients(Surface):
             p1, p2 = pi[0], pi[1]
             if self.a == 0 and self.b == 0:
                 # r1 should be the same as r2
-                if xyz == "x":
+                if axis == "x":
                     return CX(R=r1)  # x cylinder
-                if xyz == "y":
+                if axis == "y":
                     return CY(R=r1)  # y cylinder
-                if xyz == "z":
+                if axis == "z":
                     return CZ(R=r1)  # z cylinder
             elif self.a == 0 and self.b != 0:
                 # r1 should be the same as r2
-                if xyz == "x":
+                if axis == "x":
                     return PX(D=r1)  # x plane
-                if xyz == "y":
+                if axis == "y":
                     return PY(D=r1)  # y plane
-                if xyz == "z":
+                if axis == "z":
                     return PZ(D=r1)  # z plane
             else:
 
@@ -149,11 +146,11 @@ class Coefficients(Surface):
                     msg = "Z surface, 2 coordinate pairs, cone surface r1 = r2 invalid"
                     raise TypeError(msg)
                 vertex = p1 - (r1 / t)  # vertex position on z-axis
-                if xyz == "x":
+                if axis == "x":
                     return KX(x=vertex, t_sqr=t**2, sign=sheet)  # x cone
-                if xyz == "y":
+                if axis == "y":
                     return KY(y=vertex, t_sqr=t**2, sign=sheet)  # y cone
-                if xyz == "z":
+                if axis == "z":
                     return KZ(z=vertex, t_sqr=t**2, sign=sheet)  # z cone
 
         # three coordinate pairs
@@ -162,30 +159,30 @@ class Coefficients(Surface):
             p1, p2, p3 = pi[0], pi[1], pi[2]
             if self.a == 0 and self.b == 0:
                 # r1 should be the same as r2 and r3
-                if xyz == "x":
+                if axis == "x":
                     return CX(R=r1)  # x cylinder
-                if xyz == "y":
+                if axis == "y":
                     return CY(R=r1)  # y cylinder
-                if xyz == "z":
+                if axis == "z":
                     return CZ(R=r1)  # z cylinder
             elif self.a == 0 and self.b != 0:
                 # r1 should be the same as r2 and r3
-                if xyz == "x":
+                if axis == "x":
                     return PX(D=r1)  # x plane
-                if xyz == "y":
+                if axis == "y":
                     return PY(D=r1)  # y plane
-                if xyz == "z":
+                if axis == "z":
                     return PZ(D=r1)  # z plane
             elif self.a > 0 and self.b != 0:
                 pc = ((p2**2 - p1**2) + (r2**2 - r1**2)) / (
                     2 * (p2 - p1)
                 )  # pc -> centre of sphere along xyz-axis
                 radius = (p1**2 - 2 * p1 * pc + pc**2 + r1**2) ** 0.5
-                if xyz == "x":
+                if axis == "x":
                     return SX(x=pc, R=radius)  # x sphere
-                if xyz == "y":
+                if axis == "y":
                     return SY(y=pc, R=radius)  # y sphere
-                if xyz == "z":
+                if axis == "z":
                     return SZ(z=pc, R=radius)  # z sphere
             elif self.a < 0 and self.b != 0:
                 t = (r3 - r2) / (p3 - p2)
@@ -198,24 +195,24 @@ class Coefficients(Surface):
                     msg = "Z surface, 2 coordinate pairs, cone surface r1 = r2 invalid"
                     raise TypeError(msg)
                 vertex = p1 - (r1 / t)  # vertex position on xyz-axis
-                if xyz == "x":
+                if axis == "x":
                     return KX(x=vertex, t_sqr=t**2, sign=sheet)  # x cone
-                if xyz == "y":
+                if axis == "y":
                     return KY(y=vertex, t_sqr=t**2, sign=sheet)  # y cone
-                if xyz == "z":
+                if axis == "z":
                     return KZ(z=vertex, t_sqr=t**2, sign=sheet)  # z cone
             elif self.a != 0 and self.b == 0:
                 p0 = (-1 * self.b) / (2 * self.a)  # p0 -> displacement along xyz-axis
-                if xyz == "x":
+                if axis == "x":
                     return SQ(x=p0, y=0, z=0, A=self.a, B=self.b, C=self.c, D=0, E=0, F=0, G=-1)
-                if xyz == "y":
+                if axis == "y":
                     return SQ(x=0, y=p0, z=0, A=self.a, B=self.b, C=self.c, D=0, E=0, F=0, G=-1)
-                if xyz == "z":
+                if axis == "z":
                     return SQ(x=0, y=0, z=p0, A=self.a, B=self.b, C=self.c, D=0, E=0, F=0, G=-1)
 
         # number of coordinate pair(s) < 1 or > 3 invalid
         else:
-            msg = "invalid number of coordinate points for surface Z"
+            msg = "invalid number of coordinate points for surface"
             raise TypeError(msg)
 
 
