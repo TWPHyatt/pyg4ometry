@@ -1,4 +1,5 @@
 import numpy as _np
+import sympy as _sp
 from ..pycgal.Point_3 import Point_3_ECER as _Point_3_ECER
 from ..pycgal.Vector_3 import Vector_3_ECER as _Vector_3_ECER
 from ..pycgal.Plane_3 import Plane_3_ECER as _Plane_3_ECER
@@ -34,9 +35,16 @@ class Coefficients(Surface):
     def __init__(self):
         super().__init__()
         self.numPoints = 0
-        self.a = None
-        self.b = None
-        self.c = None
+        self.A = None
+        self.B = None
+        self.C = None
+        self.D = None
+        self.E = None
+        self.F = None
+        self.G = None
+        self.H = None
+        self.J = None
+        self.K = None
 
     def _calcCoeffs(self, axis, pi, ri):
         """
@@ -67,40 +75,81 @@ class Coefficients(Surface):
 
         """
         M = []
-        data = zip(pi, ri)
 
-        for p, r in data:
-            r2 = r**2  # ri^2
-            x2, y2, z2, xy, yz, zx, x, y, z, one = 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
+        for axis_val, r in zip(pi, ri):
+            r_squared = r**2
+            row = _np.zeros(10)  # [A, B, C, D, E, F, G, H, J, K]
 
-            if axis == "x":
-                x2, y2, z2, zx, x, y, z = p**2, r2, r2, p * z, p, 0, 0  # No E term
+            if axis == "z":
+                row[0] = r_squared  # A * r^2 (x^2 + y^2)
+                row[2] = axis_val**2  # C * z^2
+                row[8] = axis_val  # J * z
+                row[9] = 1  # K
+
+            elif axis == "x":
+                row[1] = r_squared  # B * r^2 (y^2 + z^2)
+                row[0] = axis_val**2  # A * x^2
+                row[6] = axis_val  # G * x
+                row[9] = 1  # K
+
             elif axis == "y":
-                x2, y2, z2, xy, y, x, z = r2, p**2, r2, p * x, p, 0, 0  # No F term
-            elif axis == "z":
-                x2, y2, z2, yz, zx, y, z = r2, r2, p**2, p * y, p * x, 0, p  # No D term
-            else:
-                msg = "Axis must be x, y, or z"
-                raise ValueError(msg)
+                row[0] = r_squared  # A * r^2 (x^2 + z^2)
+                row[1] = axis_val**2  # B * y^2
+                row[7] = axis_val  # H * y
+                row[9] = 1  # K
 
-            M.append([x2, y2, z2, xy, yz, zx, x, y, z, one])
+            M.append(row)
 
         M = _np.array(M)
 
-        # solve
+        # Compute the null space using SVD
         U, S, Vt = _np.linalg.svd(M)
-        coeffs = Vt[-1, :]
+        coeffs = Vt[-1, :]  # Last row of V^T gives the solution
 
-        # normalise
-        coeffs /= coeffs[-1]
+        # Normalize for easier interpretation
+        coeffs = coeffs / coeffs[-1]
 
-        return coeffs
+        self.A = coeffs[0]
+        self.B = coeffs[1]
+        self.C = coeffs[2]
+        self.D = coeffs[3]
+        self.E = coeffs[4]
+        self.F = coeffs[5]
+        self.G = coeffs[6]
+        self.H = coeffs[7]
+        self.J = coeffs[8]
+        self.K = coeffs[9]
 
     def _surfaceFromPoints(self, axis, pi, ri):
-        """ """
+        """
+        SPHERE TEST
 
-        print(self._calcCoeffs(axis, pi, ri))
-        print("coeffs found")
+        r0, z0 = _sp.symbols('r0 z0')  # center of the sphere (to find)
+
+        # sphere equation (r - r0)^2 + (z - z0)^2 = R^2
+        eq1 = (r1 - r0) ** 2 + (z1 - z0) ** 2  # (1) sphere eqn for z1 r1
+        eq2 = (r2 - r0) ** 2 + (z2 - z0) ** 2  # (2) sphere eqn for z2 r2
+        eq3 = (r3 - r0) ** 2 + (z3 - z0) ** 2  # (3) sphere eqn for z3 r3
+
+        # subtract equations (2) - (1) & (3) - (1), and solve for r0 z0
+        solution = _sp.solve([eq2 - eq1, eq3 - eq1], (r0, z0))
+        r0, z0 = solution[r0], solution[z0]
+        R = _sp.sqrt(eq1.subs(solution))
+
+        is_sphere = all(_sp.simplify((r - r0) ** 2 + (z - z0) ** 2 - R ** 2) == 0 for r, z in [(r1, z1), (r2, z2), (r3, z3)])
+
+        if is_sphere:
+            # SO with r0, z0, R
+        else:
+            # CONE OR SQ surface
+
+        """
+
+        self._calcCoeffs(axis, pi, ri)
+        print(f"A: {self.A} B: {self.B} C: {self.C}")
+        print(f"D: {self.D} E: {self.E} F: {self.F}")
+        print(f"G: {self.G} H: {self.H} J: {self.J}")
+        print(f"K: {self.K}")
 
         # one coordinate pair
         if self.numPoints == 1:
@@ -118,7 +167,7 @@ class Coefficients(Surface):
         elif self.numPoints == 2:
             r1, r2 = ri[0], ri[1]
             p1, p2 = pi[0], pi[1]
-            if self.a == 0 and self.b == 0:
+            if self.A == 0 and self.B == 0:
                 # r1 should be the same as r2
                 if axis == "x":
                     return CX(R=r1)  # x cylinder
@@ -126,7 +175,7 @@ class Coefficients(Surface):
                     return CY(R=r1)  # y cylinder
                 if axis == "z":
                     return CZ(R=r1)  # z cylinder
-            elif self.a == 0 and self.b != 0:
+            elif self.A == 0 and self.B != 0:
                 # r1 should be the same as r2
                 if axis == "x":
                     return PX(D=r1)  # x plane
@@ -157,7 +206,7 @@ class Coefficients(Surface):
         elif self.numPoints == 3:
             r1, r2, r3 = ri[0], ri[1], ri[2]
             p1, p2, p3 = pi[0], pi[1], pi[2]
-            if self.a == 0 and self.b == 0:
+            if self.A == 0 and self.B == 0:
                 # r1 should be the same as r2 and r3
                 if axis == "x":
                     return CX(R=r1)  # x cylinder
@@ -165,7 +214,7 @@ class Coefficients(Surface):
                     return CY(R=r1)  # y cylinder
                 if axis == "z":
                     return CZ(R=r1)  # z cylinder
-            elif self.a == 0 and self.b != 0:
+            elif self.A == 0 and self.B != 0:
                 # r1 should be the same as r2 and r3
                 if axis == "x":
                     return PX(D=r1)  # x plane
@@ -173,7 +222,7 @@ class Coefficients(Surface):
                     return PY(D=r1)  # y plane
                 if axis == "z":
                     return PZ(D=r1)  # z plane
-            elif self.a > 0 and self.b != 0:
+            elif self.A > 0 and self.B != 0:
                 pc = ((p2**2 - p1**2) + (r2**2 - r1**2)) / (
                     2 * (p2 - p1)
                 )  # pc -> centre of sphere along xyz-axis
@@ -184,7 +233,7 @@ class Coefficients(Surface):
                     return SY(y=pc, R=radius)  # y sphere
                 if axis == "z":
                     return SZ(z=pc, R=radius)  # z sphere
-            elif self.a < 0 and self.b != 0:
+            elif self.A < 0 and self.B != 0:
                 t = (r3 - r2) / (p3 - p2)
                 if r3 > r2:  # expanding cone
                     sheet = +1  # positive sheet
@@ -201,14 +250,14 @@ class Coefficients(Surface):
                     return KY(y=vertex, t_sqr=t**2, sign=sheet)  # y cone
                 if axis == "z":
                     return KZ(z=vertex, t_sqr=t**2, sign=sheet)  # z cone
-            elif self.a != 0 and self.b == 0:
-                p0 = (-1 * self.b) / (2 * self.a)  # p0 -> displacement along xyz-axis
+            elif self.A != 0 and self.B == 0:
+                p0 = (-1 * self.B) / (2 * self.A)  # p0 -> displacement along xyz-axis
                 if axis == "x":
-                    return SQ(x=p0, y=0, z=0, A=self.a, B=self.b, C=self.c, D=0, E=0, F=0, G=-1)
+                    return SQ(x=p0, y=0, z=0, A=self.A, B=self.B, C=self.C, D=0, E=0, F=0, G=-1)
                 if axis == "y":
-                    return SQ(x=0, y=p0, z=0, A=self.a, B=self.b, C=self.c, D=0, E=0, F=0, G=-1)
+                    return SQ(x=0, y=p0, z=0, A=self.A, B=self.B, C=self.C, D=0, E=0, F=0, G=-1)
                 if axis == "z":
-                    return SQ(x=0, y=0, z=p0, A=self.a, B=self.b, C=self.c, D=0, E=0, F=0, G=-1)
+                    return SQ(x=0, y=0, z=p0, A=self.A, B=self.B, C=self.C, D=0, E=0, F=0, G=-1)
 
         # number of coordinate pair(s) < 1 or > 3 invalid
         else:
