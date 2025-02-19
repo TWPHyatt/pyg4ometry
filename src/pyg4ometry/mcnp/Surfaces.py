@@ -120,30 +120,97 @@ class Coefficients(Surface):
         self.J = coeffs[8]
         self.K = coeffs[9]
 
-    def _surfaceFromPoints(self, axis, pi, ri):
-        """
-        SPHERE TEST
+    def threeCoordSphere(self):
+        r0, z0 = _sp.symbols("r0 z0")  # center of the sphere (to find)
 
-        r0, z0 = _sp.symbols('r0 z0')  # center of the sphere (to find)
+        z1 = 3
+        r1 = 0
+        z2 = 4
+        r2 = 1
+        z3 = 5
+        r3 = 0
 
         # sphere equation (r - r0)^2 + (z - z0)^2 = R^2
-        eq1 = (r1 - r0) ** 2 + (z1 - z0) ** 2  # (1) sphere eqn for z1 r1
-        eq2 = (r2 - r0) ** 2 + (z2 - z0) ** 2  # (2) sphere eqn for z2 r2
-        eq3 = (r3 - r0) ** 2 + (z3 - z0) ** 2  # (3) sphere eqn for z3 r3
+        eq1 = (r1 - r0) ** 2 + (z1 - z0) ** 2  # (1) sphere eq for z1 r1
+        eq2 = (r2 - r0) ** 2 + (z2 - z0) ** 2  # (2) sphere eq for z2 r2
+        eq3 = (r3 - r0) ** 2 + (z3 - z0) ** 2  # (3) sphere eq for z3 r3
 
         # subtract equations (2) - (1) & (3) - (1), and solve for r0 z0
         solution = _sp.solve([eq2 - eq1, eq3 - eq1], (r0, z0))
         r0, z0 = solution[r0], solution[z0]
         R = _sp.sqrt(eq1.subs(solution))
 
-        is_sphere = all(_sp.simplify((r - r0) ** 2 + (z - z0) ** 2 - R ** 2) == 0 for r, z in [(r1, z1), (r2, z2), (r3, z3)])
+        is_sphere = all(
+            _sp.simplify((r - r0) ** 2 + (z - z0) ** 2 - R**2) == 0
+            for r, z in [(r1, z1), (r2, z2), (r3, z3)]
+        )
 
         if is_sphere:
-            # SO with r0, z0, R
+            dummy = True
+            # True and values r0, z0, R
         else:
-            # CONE OR SQ surface
+            dummy = False
+            # False so move on to cone or quadratic surface
+            # check for cone:
+            # solve cone equations and if valid vertex of cone then cone surface
+            # check for quadratic:
+            # Ar^2 + Bz^2 + Crz + Dr + Ez + F = 0
+            # if A & B > 0 -> Ellipsoid
+            # if A, B, C have mixed signed -> Hyperboloid
+            # if equation reduces to r^2 = az + b -> paraboloid
+            # Alternativly, general quadratic equation Ax^2 + By^2 + Cz^2 + Dxy + Exz ...
+            # and classify the surface based on eigenvalues of its quadratic coefficient matrix.
 
-        """
+    def threeCoordCone(self):
+        k, z0 = _sp.symbols("k z0")  # Slope and vertex height
+        z1 = -3
+        r1 = 2
+        z2 = 2
+        r2 = 1
+        z3 = -0.5
+        r3 = 1.5
+
+        # cone equation z^2 = x^2 + y^2
+        # in cylindrical coords
+        # cone equations r = k(z - z0) k->slope & z0 height of vertex
+        eq1 = r1**2 - k**2 * (z1 - z0) ** 2
+        eq2 = r2**2 - k**2 * (z2 - z0) ** 2
+        eq3 = r3**2 - k**2 * (z3 - z0) ** 2
+
+        # Solve for k and z0
+        solution = _sp.solve([eq2 - eq1, eq3 - eq1], (k, z0))
+        print("solutions:", solution)
+
+        if len(solution) > 1 and not any(
+            isinstance(solution, complex) for i in solution for j in i
+        ):
+            # testing the k solution values
+            if solution[0][0] > 0 and solution[1][0] < 0:
+                sol = solution[0]  # positibve sope
+            elif solution[1][0] > 0 and solution[0][0] < 0:
+                sol = solution[1]
+            else:
+                print("error: multiple cone soltuions and the slopes are not one +ve and one -ve")
+
+            k, z0 = sol[0], sol[1]
+
+            # Validate the solution for all points
+            tolerance = 1e-6  # equation almost = 0 but floating point precision so using tolerance
+            isCone = all(
+                abs(_sp.simplify(r**2 - k**2 * (z - z0) ** 2).evalf()) < tolerance
+                for r, z in [(r1, z1), (r2, z2), (r3, z3)]
+            )
+            print("is cone: ", isCone)
+
+            if isCone:
+                print(f"Points lie on a cone with slope k={k} and vertex at z0={z0}")
+            else:
+                print("Points do not lie on a cone.")
+        else:
+            print("error: more than two cone solutions or solutions are complex (not a cone)")
+
+    def _surfaceFromPoints(self, axis, pi, ri):
+        """ """
 
         self._calcCoeffs(axis, pi, ri)
         print(f"A: {self.A} B: {self.B} C: {self.C}")
