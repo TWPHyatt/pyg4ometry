@@ -31,308 +31,329 @@ class Surface:
         return str(self.surfaceNumber)
 
 
-class Coefficients(Surface):
-    def __init__(self):
+class SurfaceSolve(Surface):
+    def __init__(self, coordNum):
         super().__init__()
-        self.numPoints = 0
-        self.A = None
-        self.B = None
-        self.C = None
-        self.D = None
-        self.E = None
-        self.F = None
-        self.G = None
-        self.H = None
-        self.J = None
-        self.K = None
+        self.numPoints = coordNum
 
-    def _calcCoeffs(self, axis, pi, ri):
-        """
-        Compute the coefficients A, B, C, D, E, F, G, H, J, K of the general quadric (GQ surface)
-        given data points in the form (pi, ri) and the axis type 'X', 'Y', or 'Z'.
 
-        GQ -> Ax^2 + By^2 + Cz^2 + Dxy + Eyz + Fxy + Gx + Hy + Jz + K = 0
+def findCoeffsSQ(axis, points):
+    """
+    Solves for the coefficients A, B, C, D, E, F, G, x', y', z' of the SQ quadratic surface equation
+    Returns  coefficients {A, B, C, D, E, F, G, x', y', z'}.
+    SQ: A(x-x')^2 + B(y-y')^2  + C(z-z')^2 + 2D(x-x') + 2E(y-y') + 2F(z-z') + G = 0
+    """
 
-        axisymmetric input
-        X: ri = sqrt(yi^2 + zi^2) -> GQ -> Ax^2 + By^2 + Cz^2 + Dxy + Fzx + Gx + Hy + Jz + K = 0   (no Eyz mixed term)
-        Y: ri = sqrt(xi^2 + zi^2) -> GQ -> Ax^2 + By^2 + Cz^2 + Dxy + Eyz + Gx + Hy + Jz + K = 0   (no Fzx mixed term)
-        Z: ri = sqrt(xi^2 + yi^2) -> GQ -> Ax^2 + By^2 + Cz^2 + Eyz + Fzx + Gx + Hy + Jz + K = 0   (no Dxy mixed term)
+    (x1, r1), (x2, r2), (x3, r3) = points
 
-        GQ -> matrix M * vector C = vector of zeros
+    # construct matrix equations
+    M = _np.array([[x1**2, x1, 1], [x2**2, x2, 1], [x3**2, x3, 1]])
+    rhs = _np.array([r1**2, r2**2, r3**2])
 
-        matrix M                                                vector C    vector zeros
-        | x1^2  y1^2  z1^2  x1y1  y1z1  z1x1  x1  y1  z1  1 |   | A |       | 0 |
-        | x2^2  y2^2  z2^2  x2y2  y2z2  z2x2  x2  y2  z2  1 |   | B |   =   | 0 |
-        | x3^2  y3^3  z3^2  x3y3  y3z3  z3x3  x3  y3  z3  1 |   | C |       | 0 |
-                                                                | D |
-                                                                | E |
-                                                                | F |
-                                                                | G |
-                                                                | H |
-                                                                | J |
+    # solve for coefficients
+    Aprime, Bprime, Cprime = _np.linalg.solve(M, rhs)
 
-        Solve for coefficients (C vector)
+    print(Aprime, Bprime, Cprime)
 
-        """
-        M = []
+    A, B, C, D, E, F, G = 1, 1, 1, 0, 0, 0, 0
 
-        for axis_val, r in zip(pi, ri):
-            r_squared = r**2
-            row = _np.zeros(10)  # [A, B, C, D, E, F, G, H, J, K]
+    # coefficients based on axis
+    if axis == "X":
+        Xprime = -Bprime / (2 * Aprime)
+        print(Xprime)
+        Yprime = 0
+        Zprime = 0
+        G = Aprime * (Xprime**2) - Cprime  # - (Bprime*Xprime)
+        A = -Aprime
+        D = 2 * Aprime * Xprime + Bprime
+    elif axis == "Y":
+        Yprime = -Bprime / (2 * Aprime)
+        print(Yprime)
+        Xprime = 0
+        Zprime = 0
+        G = Aprime * (Yprime**2) - Cprime  # - (Bprime*Yprime)
+        B = -Aprime
+        E = 2 * Aprime * Yprime + Bprime
+    elif axis == "Z":
+        Zprime = -Bprime / (2 * Aprime)
+        print(Zprime)
+        Xprime = 0
+        Yprime = 0
+        G = Cprime
+        C = -Aprime
+        F = Bprime
+    else:
+        msg = "Axis must be X, Y, or Z"
+        raise ValueError(msg)
 
-            if axis == "z":
-                row[0] = r_squared  # A * r^2 (x^2 + y^2)
-                row[2] = axis_val**2  # C * z^2
-                row[8] = axis_val  # J * z
-                row[9] = 1  # K
+    result = {
+        "A": A,
+        "B": B,
+        "C": C,
+        "D": D,
+        "E": E,
+        "F": F,
+        "G": G,
+        "x*": Xprime,
+        "y*": Yprime,
+        "z*": Zprime,
+    }
 
-            elif axis == "x":
-                row[1] = r_squared  # B * r^2 (y^2 + z^2)
-                row[0] = axis_val**2  # A * x^2
-                row[6] = axis_val  # G * x
-                row[9] = 1  # K
+    return result
 
-            elif axis == "y":
-                row[0] = r_squared  # A * r^2 (x^2 + z^2)
-                row[1] = axis_val**2  # B * y^2
-                row[7] = axis_val  # H * y
-                row[9] = 1  # K
+    def _sphereSolve(self, pi, ri):
+        r0, p0 = _sp.symbols("r0 p0")  # center of the sphere (to find)
+        payload = []
 
-            M.append(row)
+        if self.numPoints == 3:
+            r1, r2, r3 = ri[0], ri[1], ri[2]
+            p1, p2, p3 = pi[0], pi[1], pi[2]
+            points = [(r1, p1), (r2, p2), (r3, p3)]
+            # sphere equation (r - r0)^2 + (z - z0)^2 = R^2
+            eq1 = (r1 - r0) ** 2 + (p1 - p0) ** 2  # (1) sphere eq for z1 r1
+            eq2 = (r2 - r0) ** 2 + (p2 - p0) ** 2  # (2) sphere eq for z2 r2
+            eq3 = (r3 - r0) ** 2 + (p3 - p0) ** 2  # (3) sphere eq for z3 r3
 
-        M = _np.array(M)
+            # subtract equations (2) - (1) & (3) - (1), and solve for r0 z0
+            solution = _sp.solve([eq2 - eq1, eq3 - eq1], (r0, p0))
+            r0, z0 = solution[r0], solution[p0]
+            R = _sp.sqrt(eq1.subs(solution))
 
-        # Compute the null space using SVD
-        U, S, Vt = _np.linalg.svd(M)
-        coeffs = Vt[-1, :]  # Last row of V^T gives the solution
+            is_sphere = all(
+                _sp.simplify((r - r0) ** 2 + (z - z0) ** 2 - R**2) == 0 for r, z in points
+            )
 
-        # Normalize for easier interpretation
-        coeffs = coeffs / coeffs[-1]
+            if is_sphere:
+                payload = [r0, p0, R]
+                return True, payload
+            else:
+                return False, payload
 
-        self.A = coeffs[0]
-        self.B = coeffs[1]
-        self.C = coeffs[2]
-        self.D = coeffs[3]
-        self.E = coeffs[4]
-        self.F = coeffs[5]
-        self.G = coeffs[6]
-        self.H = coeffs[7]
-        self.J = coeffs[8]
-        self.K = coeffs[9]
-
-    def threeCoordSphere(self):
-        r0, z0 = _sp.symbols("r0 z0")  # center of the sphere (to find)
-
-        z1 = 3
-        r1 = 0
-        z2 = 4
-        r2 = 1
-        z3 = 5
-        r3 = 0
-
-        # sphere equation (r - r0)^2 + (z - z0)^2 = R^2
-        eq1 = (r1 - r0) ** 2 + (z1 - z0) ** 2  # (1) sphere eq for z1 r1
-        eq2 = (r2 - r0) ** 2 + (z2 - z0) ** 2  # (2) sphere eq for z2 r2
-        eq3 = (r3 - r0) ** 2 + (z3 - z0) ** 2  # (3) sphere eq for z3 r3
-
-        # subtract equations (2) - (1) & (3) - (1), and solve for r0 z0
-        solution = _sp.solve([eq2 - eq1, eq3 - eq1], (r0, z0))
-        r0, z0 = solution[r0], solution[z0]
-        R = _sp.sqrt(eq1.subs(solution))
-
-        is_sphere = all(
-            _sp.simplify((r - r0) ** 2 + (z - z0) ** 2 - R**2) == 0
-            for r, z in [(r1, z1), (r2, z2), (r3, z3)]
-        )
-
-        if is_sphere:
-            dummy = True
-            # True and values r0, z0, R
         else:
-            dummy = False
-            # False so move on to cone or quadratic surface
-            # check for cone:
-            # solve cone equations and if valid vertex of cone then cone surface
-            # check for quadratic:
-            # Ar^2 + Bz^2 + Crz + Dr + Ez + F = 0
-            # if A & B > 0 -> Ellipsoid
-            # if A, B, C have mixed signed -> Hyperboloid
-            # if equation reduces to r^2 = az + b -> paraboloid
-            # Alternativly, general quadratic equation Ax^2 + By^2 + Cz^2 + Dxy + Exz ...
-            # and classify the surface based on eigenvalues of its quadratic coefficient matrix.
+            msg = "invalid number of coordinate points for cone"
+            raise TypeError(msg)
 
-    def threeCoordCone(self):
-        k, z0 = _sp.symbols("k z0")  # Slope and vertex height
-        z1 = -3
-        r1 = 2
-        z2 = 2
-        r2 = 1
-        z3 = -0.5
-        r3 = 1.5
+    def _coneSolve(self, pi, ri):
+        k, p0 = _sp.symbols("k p0")  # Slope and vertex height
+        r1, r2 = ri[0], ri[1]
+        p1, p2 = pi[0], pi[1]
+        points = [(r1, p1), (r2, p2)]
+        sheet = 0
 
         # cone equation z^2 = x^2 + y^2
         # in cylindrical coords
         # cone equations r = k(z - z0) k->slope & z0 height of vertex
-        eq1 = r1**2 - k**2 * (z1 - z0) ** 2
-        eq2 = r2**2 - k**2 * (z2 - z0) ** 2
-        eq3 = r3**2 - k**2 * (z3 - z0) ** 2
+        eq1 = r1**2 - k**2 * (p1 - p0) ** 2
+        eq2 = r2**2 - k**2 * (p2 - p0) ** 2
 
-        # Solve for k and z0
-        solution = _sp.solve([eq2 - eq1, eq3 - eq1], (k, z0))
-        print("solutions:", solution)
+        if self.numPoints == 2:
+            # Solve for k and z0
+            solution = _sp.solve([eq2 - eq1], (k, p0))
 
-        if len(solution) > 1 and not any(
-            isinstance(solution, complex) for i in solution for j in i
-        ):
-            # testing the k solution values
-            if solution[0][0] > 0 and solution[1][0] < 0:
-                sol = solution[0]  # positibve sope
-            elif solution[1][0] > 0 and solution[0][0] < 0:
-                sol = solution[1]
+        elif self.numPoints == 3:
+            r3 = ri[2]
+            p3 = pi[2]
+            points.append((r3, p3))
+            eq3 = r3**2 - k**2 * (p3 - p0) ** 2
+
+            # Solve for k and z0
+            solution = _sp.solve([eq2 - eq1, eq3 - eq1], (k, p0))
+
+        else:
+            msg = "invalid number of coordinate points for cone"
+            raise TypeError(msg)
+
+        # print("cone solutions:", solution)
+
+        if not all(j.is_real for i in solution for j in i):
+            return False, []
+        else:
+            if len(solution) > 1:
+                # testing the k solution values
+                if solution[0][0] > 0 and solution[1][0] < 0:
+                    # solution[0] -> positive slope
+                    sheet = 1
+                    k, p0 = solution[0][0], solution[0][1]
+                elif solution[1][0] > 0 and solution[0][0] < 0:
+                    # solution[1] -> negative slope
+                    sheet = -1
+                    k, p0 = solution[1][0], solution[1][1]
+                else:
+                    msg = (
+                        "error: multiple cone solutions and the slopes are not one +ve and one -ve"
+                    )
+                    raise TypeError(msg)
             else:
-                print("error: multiple cone soltuions and the slopes are not one +ve and one -ve")
+                msg = "only one solution to the cone exists"
+                raise TypeError(msg)
 
-            k, z0 = sol[0], sol[1]
-
-            # Validate the solution for all points
-            tolerance = 1e-6  # equation almost = 0 but floating point precision so using tolerance
-            isCone = all(
-                abs(_sp.simplify(r**2 - k**2 * (z - z0) ** 2).evalf()) < tolerance
-                for r, z in [(r1, z1), (r2, z2), (r3, z3)]
+            # Validate the solution for all coordinate pairs
+            tolerance = (
+                1e-6  # equation should = 0 but floating point precision so using tolerance of 1e-6
             )
-            print("is cone: ", isCone)
+            isCone = all(
+                abs(_sp.simplify(r**2 - k**2 * (p - p0) ** 2).evalf()) < tolerance
+                for r, p in points
+            )
 
             if isCone:
-                print(f"Points lie on a cone with slope k={k} and vertex at z0={z0}")
+                # print(f"Points lie on a cone with slope k={k} and vertex at p0={p0}")
+                return True, [p0, k, sheet]
+
             else:
-                print("Points do not lie on a cone.")
-        else:
-            print("error: more than two cone solutions or solutions are complex (not a cone)")
+                # print("Points do not lie on a cone.")
+                return False, []
 
     def _surfaceFromPoints(self, axis, pi, ri):
         """ """
-
-        self._calcCoeffs(axis, pi, ri)
-        print(f"A: {self.A} B: {self.B} C: {self.C}")
-        print(f"D: {self.D} E: {self.E} F: {self.F}")
-        print(f"G: {self.G} H: {self.H} J: {self.J}")
-        print(f"K: {self.K}")
+        if axis != "x" and axis != "y" and axis != "z":
+            msg = "axis can only be x, y, or z"
+            raise TypeError(msg)
 
         # one coordinate pair
         if self.numPoints == 1:
-            print("POINTS = 1")
-            r1 = ri[0]  # distance from axis to plane
-            # if isinstance(xyz, X):
+            print("1 coordinate pair")
+            p1 = pi[0]  # distance from axis to plane
             if axis == "x":
-                return PX(D=r1)  # x plane
-            if axis == "y":
-                return PY(D=r1)  # y plane
-            if axis == "z":
-                return PZ(D=r1)  # z plane
+                print("> x plane")
+                return PX(D=p1)  # x plane
+            elif axis == "y":
+                print("> y plane")
+                return PY(D=p1)  # y plane
+            elif axis == "z":
+                print("> z plane")
+                return PZ(D=p1)  # z plane
 
         # two coordinate pairs
         elif self.numPoints == 2:
+            print("2 coordinate pairs")
             r1, r2 = ri[0], ri[1]
             p1, p2 = pi[0], pi[1]
-            if self.A == 0 and self.B == 0:
-                # r1 should be the same as r2
+            if p1 == p2:
                 if axis == "x":
+                    print("> x plane")
+                    return PX(D=p1)  # x plane
+                elif axis == "y":
+                    print("> y plane")
+                    return PY(D=p1)  # y plane
+                elif axis == "z":
+                    print("> z plane")
+                    return PZ(D=p1)  # z plane
+            elif r1 == r2:
+                if axis == "x":
+                    print("> x cylinder")
                     return CX(R=r1)  # x cylinder
-                if axis == "y":
+                elif axis == "y":
+                    print("> y cylinder")
                     return CY(R=r1)  # y cylinder
-                if axis == "z":
+                elif axis == "z":
+                    print("> z cylinder")
                     return CZ(R=r1)  # z cylinder
-            elif self.A == 0 and self.B != 0:
-                # r1 should be the same as r2
-                if axis == "x":
-                    return PX(D=r1)  # x plane
-                if axis == "y":
-                    return PY(D=r1)  # y plane
-                if axis == "z":
-                    return PZ(D=r1)  # z plane
-            else:
-
-                t = (r2 - r1) / (p2 - p1)
-                if r2 > r1:  # expanding cone
-                    sheet = +1  # positive sheet
-                if r2 < r1:  # contracting cone
-                    sheet = -1  # negative sheet
+            else:  # r1 != r2
+                isCone, data = self._coneSolve(pi, ri)
+                if isCone:
+                    if axis == "x":
+                        print("> x cone")
+                        return KX(x=data[0], t_sqr=data[1] ** 2, sign=data[2])  # x cone
+                    elif axis == "y":
+                        print("> y cone")
+                        return KY(y=data[0], t_sqr=data[1] ** 2, sign=data[2])  # y cone
+                    elif axis == "z":
+                        print("> z cone")
+                        return KZ(z=data[0], t_sqr=data[1] ** 2, sign=data[2])  # z cone
                 else:
-                    sheet = 0  # impossible as this is a plane
-                    msg = "Z surface, 2 coordinate pairs, cone surface r1 = r2 invalid"
+                    msg = "could not find a surface for two coordinate pairs"
                     raise TypeError(msg)
-                vertex = p1 - (r1 / t)  # vertex position on z-axis
-                if axis == "x":
-                    return KX(x=vertex, t_sqr=t**2, sign=sheet)  # x cone
-                if axis == "y":
-                    return KY(y=vertex, t_sqr=t**2, sign=sheet)  # y cone
-                if axis == "z":
-                    return KZ(z=vertex, t_sqr=t**2, sign=sheet)  # z cone
 
         # three coordinate pairs
         elif self.numPoints == 3:
+            isCone = False
+            isSphere = False
+            print("3 coordinate pairs")
             r1, r2, r3 = ri[0], ri[1], ri[2]
             p1, p2, p3 = pi[0], pi[1], pi[2]
-            if self.A == 0 and self.B == 0:
-                # r1 should be the same as r2 and r3
+            print("is cone?")
+            isCone, data = self._coneSolve(pi, ri)
+            print(isCone)
+            if not isCone:
+                print("is sphere?")
+                isSphere, data = self._sphereSolve(pi, ri)
+                print(isSphere)
+            if p1 == p2 == p3:
                 if axis == "x":
+                    print("> x plane")
+                    return PX(D=p1)  # x plane
+                elif axis == "y":
+                    print("> y plane")
+                    return PY(D=p1)  # y plane
+                elif axis == "z":
+                    print("> z plane")
+                    return PZ(D=p1)  # z plane
+            elif r1 == r2 == r3:
+                if axis == "x":
+                    print("> x cylinder")
                     return CX(R=r1)  # x cylinder
-                if axis == "y":
+                elif axis == "y":
+                    print("> y cylinder")
                     return CY(R=r1)  # y cylinder
-                if axis == "z":
+                elif axis == "z":
+                    print("> z cylinder")
                     return CZ(R=r1)  # z cylinder
-            elif self.A == 0 and self.B != 0:
-                # r1 should be the same as r2 and r3
+            elif isCone:
                 if axis == "x":
-                    return PX(D=r1)  # x plane
-                if axis == "y":
-                    return PY(D=r1)  # y plane
-                if axis == "z":
-                    return PZ(D=r1)  # z plane
-            elif self.A > 0 and self.B != 0:
-                pc = ((p2**2 - p1**2) + (r2**2 - r1**2)) / (
-                    2 * (p2 - p1)
-                )  # pc -> centre of sphere along xyz-axis
-                radius = (p1**2 - 2 * p1 * pc + pc**2 + r1**2) ** 0.5
-                if axis == "x":
-                    return SX(x=pc, R=radius)  # x sphere
-                if axis == "y":
-                    return SY(y=pc, R=radius)  # y sphere
-                if axis == "z":
-                    return SZ(z=pc, R=radius)  # z sphere
-            elif self.A < 0 and self.B != 0:
-                t = (r3 - r2) / (p3 - p2)
-                if r3 > r2:  # expanding cone
-                    sheet = +1  # positive sheet
-                if r3 < r2:  # contracting cone
-                    sheet = -1  # negative sheet
+                    print("> x cone")
+                    return KX(x=data[0], t_sqr=data[1] ** 2, sign=data[2])  # x cone
+                elif axis == "y":
+                    print("> y cone")
+                    return KY(y=data[0], t_sqr=data[1] ** 2, sign=data[2])  # y cone
+                elif axis == "z":
+                    print("> z cone")
+                    return KZ(z=data[0], t_sqr=data[1] ** 2, sign=data[2])  # z cone
+            elif isSphere:
+                if data[1] == 0:
+                    return SO(R=data[2])  # sphere centered at origin
                 else:
-                    sheet = 0  # impossible as this is a plane...
-                    msg = "Z surface, 2 coordinate pairs, cone surface r1 = r2 invalid"
-                    raise TypeError(msg)
-                vertex = p1 - (r1 / t)  # vertex position on xyz-axis
-                if axis == "x":
-                    return KX(x=vertex, t_sqr=t**2, sign=sheet)  # x cone
-                if axis == "y":
-                    return KY(y=vertex, t_sqr=t**2, sign=sheet)  # y cone
-                if axis == "z":
-                    return KZ(z=vertex, t_sqr=t**2, sign=sheet)  # z cone
-            elif self.A != 0 and self.B == 0:
-                p0 = (-1 * self.B) / (2 * self.A)  # p0 -> displacement along xyz-axis
-                if axis == "x":
-                    return SQ(x=p0, y=0, z=0, A=self.A, B=self.B, C=self.C, D=0, E=0, F=0, G=-1)
-                if axis == "y":
-                    return SQ(x=0, y=p0, z=0, A=self.A, B=self.B, C=self.C, D=0, E=0, F=0, G=-1)
-                if axis == "z":
-                    return SQ(x=0, y=0, z=p0, A=self.A, B=self.B, C=self.C, D=0, E=0, F=0, G=-1)
+                    if axis == "x":
+                        print("> x sphere")
+                        return SX(x=data[0], R=data[2])  # x sphere
+                    elif axis == "y":
+                        print("> y sphere")
+                        return SY(y=data[0], R=data[2])  # y sphere
+                    elif axis == "z":
+                        print("> z sphere")
+                        return SZ(z=data[0], R=data[2])  # z sphere
+            else:
+                print("> quadratic...")
+                coeffs = self._quadSolve(axis)
 
+                print(
+                    f'A {coeffs["A"]} B {coeffs["B"]} C {coeffs["C"]} \n'
+                    f'D {coeffs["D"]} E {coeffs["E"]} F {coeffs["F"]} \n'
+                    f'G {coeffs["F"]}'
+                )
+                msg = "Quadratic equations from surface point definitions not yet fully implemented"
+                raise TypeError(msg)
+                """
+                # if A B positive -> Ellipsoid
+                if A > 0 and B > 0:
+                    print("> Ellipsoid")
+                # if A B C have mixed signed -> Hyperboloid
+                if not (all(v > 0 for v in [A, B, C]) or all(v < 0 for v in [A, B, C])):  # A B C have mixed signed
+                    print("> Hyperboloid")
+                # if equation reduces to r^2 = ap + b -> paraboloid
+                if B == 0 and C == 0 and D < 0 and E == 0:
+                    print("> Paraboloid")
+
+                # Alternative method, general quadratic equation Ax^2 + By^2 + Cz^2 + Dxy + Exz ...
+                # and classify the surface based on eigenvalues of its quadratic coefficient matrix.
+                """
         # number of coordinate pair(s) < 1 or > 3 invalid
         else:
-            msg = "invalid number of coordinate points for surface"
+            msg = f"invalid number of coordinate points for surface: {self.numPoints}"
             raise TypeError(msg)
 
 
-class X(Coefficients):
+class X(SurfaceSolve):
     """
     Surface Point for a surface symmetric about the x-axis
     Used to describe surfaces by coordinate points rather
@@ -340,7 +361,7 @@ class X(Coefficients):
     """
 
     def __init__(self, *coordinatePairs, reg=None, surfaceNumber=None):
-        super().__init__()
+        super().__init__(len(coordinatePairs))
         self.xi = []  # coordinate of point i
         self.ri = []  # ri = sqrt((yi**2 + zi**2)**2)
         for i in coordinatePairs:
@@ -364,7 +385,7 @@ class X(Coefficients):
         return mesh
 
 
-class Y(Coefficients):
+class Y(SurfaceSolve):
     """
     Surface Point for a surface symmetric about the y-axis
     Used to describe surfaces by coordinate points rather
@@ -372,7 +393,7 @@ class Y(Coefficients):
     """
 
     def __init__(self, *coordinatePairs, reg=None, surfaceNumber=None):
-        super().__init__()
+        super().__init__(len(coordinatePairs))
         self.yi = []  # coordinate of point i
         self.ri = []  # ri = sqrt((yi**2 + zi**2)**2)
         for i in coordinatePairs:
@@ -396,7 +417,7 @@ class Y(Coefficients):
         return mesh
 
 
-class Z(Coefficients):
+class Z(SurfaceSolve):
     """
     Axisymmetric Surface defined by points (z-axis of symmetry)
     Used to describe surfaces by coordinate points rather than by equation coefficients.
@@ -411,7 +432,7 @@ class Z(Coefficients):
     """
 
     def __init__(self, *coordinatePairs, reg=None, surfaceNumber=None):
-        super().__init__()
+        super().__init__(len(coordinatePairs))
         self.zi = []  # coordinate of point i
         self.ri = []  # ri = sqrt((yi**2 + zi**2)**2)
         for i in coordinatePairs:
