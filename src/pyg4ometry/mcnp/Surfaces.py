@@ -18,6 +18,9 @@ from ..geant4.solid import EllipticalTube
 from ..geant4.solid import EllipticalCone
 from ..geant4.solid import Torus
 
+# for macrobody mesh()
+from .Cell import Intersection, Complement, Union
+
 inf = 1e2
 
 
@@ -326,6 +329,7 @@ class SurfaceSolve(Surface):
                 )
                 msg = "Quadratic equations from surface point definitions not yet fully implemented"
                 raise TypeError(msg)
+                # todo
                 """
                 # if A B positive -> Ellipsoid
                 if A > 0 and B > 0:
@@ -412,16 +416,9 @@ class Y(SurfaceSolve):
 
 class Z(SurfaceSolve):
     """
-    Axisymmetric Surface defined by points (z-axis of symmetry)
-    Used to describe surfaces by coordinate points rather than by equation coefficients.
-
-    :param coordinatePairs: tuples: (r1, y1), (r2, y2), ...
-    :param r: radial distance from the axis
-    :param y: coordinate along the axis of symmetry
-
-    1 coord pair - Planar Surface (PY, PX, PZ)
-    2 coord pairs - Linear Surface (CY, CX, CZ, etc.)
-    3 coord pairs - Quadratic Surface (SQ, SO, etc.)
+    Surface Point for a surface symmetric about the z-axis
+    Used to describe surfaces by coordinate points rather
+    than by equation coefficients.
     """
 
     def __init__(self, *coordinatePairs, reg=None, surfaceNumber=None):
@@ -1476,8 +1473,6 @@ class BOX(Surface):
             + self.a3z * (self.vz + self.a3z),
         )
 
-        from .Cell import Intersection, Complement, Union
-
         geom1 = Intersection(p1, Complement(p2))
         geom2 = Intersection(p3, Complement(p4))
         geom3 = Intersection(p5, Complement(p6))
@@ -1516,6 +1511,26 @@ class RPP(Surface):
             f" {self.ymin} {self.ymax} {self.zmin} {self.zmax}"
         )
 
+    def mesh(self):
+        reg = g4Reg()
+        p1 = PX(self.xmin)
+        p2 = PX(self.xmax)
+        p3 = PY(self.ymin)
+        p4 = PY(self.ymax)
+        p5 = PZ(self.zmin)
+        p6 = PZ(self.zmax)
+
+        geom1 = Intersection(p1, Complement(p2))
+        geom2 = Intersection(p3, Complement(p4))
+        geom3 = Intersection(p5, Complement(p6))
+
+        geom4 = Intersection(geom1, geom2)
+        geom5 = Intersection(geom3, geom4)
+
+        mesh = geom5.mesh()
+
+        return mesh
+
 
 class SPH(Surface):
     """
@@ -1534,6 +1549,14 @@ class SPH(Surface):
 
     def __repr__(self):
         return f"SPH {self.vx} {self.vy} {self.vz} {self.r}"
+
+    def mesh(self):
+        reg = g4Reg()
+        s = S(self.vx, self.vy, self.vz, self.r)
+
+        mesh = s.mesh()
+
+        return mesh
 
 
 class RCC(Surface):
