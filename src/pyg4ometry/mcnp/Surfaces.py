@@ -1552,9 +1552,9 @@ class SPH(Surface):
 
     def mesh(self):
         reg = g4Reg()
-        s = S(self.vx, self.vy, self.vz, self.r)
+        s1 = S(self.vx, self.vy, self.vz, self.r)
 
-        mesh = s.mesh()
+        mesh = s1.mesh()
 
         return mesh
 
@@ -1581,6 +1581,39 @@ class RCC(Surface):
 
     def __repr__(self):
         return f"RCC {self.vx} {self.vy} {self.vz} {self.hx} {self.hy} {self.hz} {self.r}"
+
+    def mesh(self):
+        reg = g4Reg()
+
+        c1 = EllipticalTube(
+            name="",
+            pDx=self.r,
+            pDy=self.r,
+            pDz=inf,
+            registry=reg,
+        )
+
+        h = _np.sqrt(self.hx**2 + self.hy**2 + self.hz**2)
+        p1 = PZ(0)
+        p2 = PZ(h)
+
+        geom1 = Intersection(p1, Complement(p2))
+        geom2 = Intersection(geom1, c1)
+
+        mesh = geom2.mesh()
+
+        axisIn = _np.cross([0, 0, 1], [self.hx, self.hy, self.hz])
+        dot_product = _np.dot([0, 0, 1], [self.hx, self.hy, self.hz])
+        norm_h = _np.linalg.norm([self.hx, self.hy, self.hz])
+        angleRad = _np.arccos(dot_product / norm_h)
+        angleDeg = _np.degrees(angleRad)
+        if _np.linalg.norm(axisIn) != 0:
+            axisIn = axisIn / _np.linalg.norm(axisIn)
+        mesh.rotate(axisIn, angleDeg)
+        disp = [self.vx, self.vy, self.vz]
+        mesh.translate(disp)
+
+        return mesh
 
 
 class RHP_HEX(Surface):
