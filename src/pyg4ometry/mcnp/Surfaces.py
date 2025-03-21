@@ -36,70 +36,63 @@ class SurfaceSolve(Surface):
         super().__init__()
         self.numPoints = coordNum
 
+    def _quadSolve(axis, points):
+        """
+        Solves for the coefficients A, B, C, D, E, F, G, x', y', z' of the SQ quadratic surface equation
+        Returns coefficients {A, B, C, D, E, F, G, x', y', z'}
+        SQ: A(x-x')^2 + B(y-y')^2  + C(z-z')^2 + 2D(x-x') + 2E(y-y') + 2F(z-z') + G = 0
+        """
 
-def findCoeffsSQ(axis, points):
-    """
-    Solves for the coefficients A, B, C, D, E, F, G, x', y', z' of the SQ quadratic surface equation
-    Returns  coefficients {A, B, C, D, E, F, G, x', y', z'}.
-    SQ: A(x-x')^2 + B(y-y')^2  + C(z-z')^2 + 2D(x-x') + 2E(y-y') + 2F(z-z') + G = 0
-    """
+        (x1, r1), (x2, r2), (x3, r3) = points
 
-    (x1, r1), (x2, r2), (x3, r3) = points
+        # construct matrix equations
+        M = _np.array([[x1**2, x1, 1], [x2**2, x2, 1], [x3**2, x3, 1]])
+        rhs = _np.array([r1**2, r2**2, r3**2])
 
-    # construct matrix equations
-    M = _np.array([[x1**2, x1, 1], [x2**2, x2, 1], [x3**2, x3, 1]])
-    rhs = _np.array([r1**2, r2**2, r3**2])
+        # solve for coefficients
+        Aprime, Bprime, Cprime = _np.linalg.solve(M, rhs)
 
-    # solve for coefficients
-    Aprime, Bprime, Cprime = _np.linalg.solve(M, rhs)
+        print(Aprime, Bprime, Cprime)
 
-    print(Aprime, Bprime, Cprime)
+        A, B, C, D, E, F, G = 1, 1, 1, 0, 0, 0, 0
 
-    A, B, C, D, E, F, G = 1, 1, 1, 0, 0, 0, 0
+        # coefficients based on axis
+        if axis == "X":
+            Xprime = -Bprime / (2 * Aprime)
+            Yprime, Zprime = 0, 0
+            G = Aprime * (Xprime**2) - Cprime + (Bprime * Xprime)
+            A = -Aprime
+            D = 2 * Aprime * Xprime + Bprime
+        elif axis == "Y":
+            Yprime = -Bprime / (2 * Aprime)
+            Xprime, Zprime = 0, 0
+            G = Aprime * (Yprime**2) - Cprime + (Bprime * Yprime)
+            B = -Aprime
+            E = 2 * Aprime * Yprime + Bprime
+        elif axis == "Z":
+            Zprime = -Bprime / (2 * Aprime)
+            Xprime, Yprime = 0, 0
+            G = Aprime * (Zprime**2) - Cprime + (Bprime * Zprime)
+            C = -Aprime
+            F = 2 * Aprime * Zprime + Bprime
+        else:
+            msg = "Axis must be X, Y, or Z"
+            raise ValueError(msg)
 
-    # coefficients based on axis
-    if axis == "X":
-        Xprime = -Bprime / (2 * Aprime)
-        print(Xprime)
-        Yprime = 0
-        Zprime = 0
-        G = Aprime * (Xprime**2) - Cprime  # - (Bprime*Xprime)
-        A = -Aprime
-        D = 2 * Aprime * Xprime + Bprime
-    elif axis == "Y":
-        Yprime = -Bprime / (2 * Aprime)
-        print(Yprime)
-        Xprime = 0
-        Zprime = 0
-        G = Aprime * (Yprime**2) - Cprime  # - (Bprime*Yprime)
-        B = -Aprime
-        E = 2 * Aprime * Yprime + Bprime
-    elif axis == "Z":
-        Zprime = -Bprime / (2 * Aprime)
-        print(Zprime)
-        Xprime = 0
-        Yprime = 0
-        G = Cprime
-        C = -Aprime
-        F = Bprime
-    else:
-        msg = "Axis must be X, Y, or Z"
-        raise ValueError(msg)
+        result = {
+            "A": A,
+            "B": B,
+            "C": C,
+            "D": D,
+            "E": E,
+            "F": F,
+            "G": G,
+            "x*": Xprime,
+            "y*": Yprime,
+            "z*": Zprime,
+        }
 
-    result = {
-        "A": A,
-        "B": B,
-        "C": C,
-        "D": D,
-        "E": E,
-        "F": F,
-        "G": G,
-        "x*": Xprime,
-        "y*": Yprime,
-        "z*": Zprime,
-    }
-
-    return result
+        return result
 
     def _sphereSolve(self, pi, ri):
         r0, p0 = _sp.symbols("r0 p0")  # center of the sphere (to find)
