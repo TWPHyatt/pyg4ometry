@@ -1,7 +1,4 @@
-from .Surfaces import Surface
 from .Material import Material
-
-from .Surfaces import inf
 
 
 class Cell:
@@ -91,69 +88,3 @@ class IMP:
         else:
             x = str(self.xj)
             return "IMP:" + str(self.pl) + "=" + x
-
-
-class Intersection:
-    """
-    mcnp : blank space between two surface numbers
-    pyg4 : asterisk
-    """
-
-    def __init__(self, left, right):
-        self.left = left
-        self.right = right
-
-    def toOutputString(self):
-        # IF UNION DOWNSTREAM ADD PARENTHESES (which also are read as an intersection like a " ")
-        if isinstance(self.right, Union) and isinstance(self.left, Union):
-            return "(" + self.left.toOutputString() + ") (" + self.right.toOutputString() + ")"
-        elif isinstance(self.right, Union):
-            return self.left.toOutputString() + " (" + self.right.toOutputString() + ")"
-        elif isinstance(self.left, Union):
-            return "(" + self.left.toOutputString() + ") " + self.right.toOutputString()
-        else:
-            return self.left.toOutputString() + " " + self.right.toOutputString()
-
-    def mesh(self):
-        return self.left.mesh().intersect(self.right.mesh())
-
-
-class Union:
-    """
-    mcnp : colon
-    pyg4 : plus
-    """
-
-    def __init__(self, left, right):
-        self.left = left
-        self.right = right
-
-    def toOutputString(self):
-        return self.left.toOutputString() + ":" + self.right.toOutputString()
-
-    def mesh(self):
-        return self.left.mesh().union(self.right.mesh())
-
-
-class Complement:
-    """
-    mcnp : hyphen for surface, hash for cell
-    pyg4 : exclamation mark
-    """
-
-    def __init__(self, item):
-        self.item = item
-
-    def toOutputString(self):
-        if isinstance(self.item, Surface):
-            return "-" + str(self.item.surfaceNumber)
-        elif isinstance(self.item, Cell):
-            return "#" + str(self.item.cellNumber)
-        else:
-            return "#" + self.item.toOutputString()
-
-    def mesh(self):
-        mesh = self.item.mesh()
-        bigBox = mesh.cube(center=[0, 0, 0], radius=[inf, inf, inf])  # big box (universe)
-
-        return bigBox.subtract(mesh)
