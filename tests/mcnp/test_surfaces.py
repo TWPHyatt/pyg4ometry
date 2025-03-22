@@ -130,3 +130,63 @@ def test_ConeZ():
     reg = pyg4ometry.mcnp.Registry()
     surface = pyg4ometry.mcnp.KY(1.3, 25, -1, reg=reg)
     print(surface)
+
+
+# ...
+
+# macrobody surfaces
+
+
+def test_BOX():
+    reg = pyg4ometry.mcnp.Registry()
+    surface = pyg4ometry.mcnp.BOX(-1, -1, -1, 2, 0, 0, 0, 2, 0, 0, 0, 2, reg=reg)
+    print(surface)
+
+
+def test_RPP():
+    reg = pyg4ometry.mcnp.Registry()
+    surface = pyg4ometry.mcnp.RPP(-1, 10, -1, 2, -20, 20, reg=reg)
+    print(surface)
+
+
+"""
+def test_SPH():
+    reg = pyg4ometry.mcnp.Registry()
+    surface = pyg4ometry.mcnp.XYZ(, reg=reg)
+    print(surface)
+
+def test_RCC():
+    reg = pyg4ometry.mcnp.Registry()
+    surface = pyg4ometry.mcnp.RCC(, reg=reg)
+    print(surface)
+
+def test_RHP_HEX():
+    reg = pyg4ometry.mcnp.Registry()
+    surface = pyg4ometry.mcnp.RHP_HEX(, reg=reg)
+    print(surface)
+
+def test_REC():
+    reg = pyg4ometry.mcnp.Registry()
+    surface = pyg4ometry.mcnp.REC(, reg=reg)
+    print(surface)
+
+def test_TRC():
+    reg = pyg4ometry.mcnp.Registry()
+    surface = pyg4ometry.mcnp.TRC(, reg=reg)
+    print(surface)
+
+def test_ELL():
+    reg = pyg4ometry.mcnp.Registry()
+    surface = pyg4ometry.mcnp.ELL(, reg=reg)
+    print(surface)
+
+def test_WED():
+    reg = pyg4ometry.mcnp.Registry()
+    surface = pyg4ometry.mcnp.WED(, reg=reg)
+    print(surface)
+
+def test_ARB():
+    reg = pyg4ometry.mcnp.Registry()
+    surface = pyg4ometry.mcnp.ARB(, reg=reg)
+    print(surface)
+"""
