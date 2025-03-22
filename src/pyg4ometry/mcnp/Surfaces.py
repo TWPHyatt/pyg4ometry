@@ -1,5 +1,6 @@
 import numpy as _np
 import sympy as _sp
+from .Cell import Cell
 from ..pycgal.Point_3 import Point_3_ECER as _Point_3_ECER
 from ..pycgal.Vector_3 import Vector_3_ECER as _Vector_3_ECER
 from ..pycgal.Plane_3 import Plane_3_ECER as _Plane_3_ECER
@@ -18,10 +19,73 @@ from ..geant4.solid import EllipticalTube
 from ..geant4.solid import EllipticalCone
 from ..geant4.solid import Torus
 
-# for macrobody mesh()
-from .Cell import Intersection, Complement, Union
-
 inf = 1e2
+
+
+class Intersection:
+    """
+    mcnp : blank space between two surface numbers
+    pyg4 : asterisk
+    """
+
+    def __init__(self, left, right):
+        self.left = left
+        self.right = right
+
+    def toOutputString(self):
+        # IF UNION DOWNSTREAM ADD PARENTHESES (which also are read as an intersection like a " ")
+        if isinstance(self.right, Union) and isinstance(self.left, Union):
+            return "(" + self.left.toOutputString() + ") (" + self.right.toOutputString() + ")"
+        elif isinstance(self.right, Union):
+            return self.left.toOutputString() + " (" + self.right.toOutputString() + ")"
+        elif isinstance(self.left, Union):
+            return "(" + self.left.toOutputString() + ") " + self.right.toOutputString()
+        else:
+            return self.left.toOutputString() + " " + self.right.toOutputString()
+
+    def mesh(self):
+        return self.left.mesh().intersect(self.right.mesh())
+
+
+class Union:
+    """
+    mcnp : colon
+    pyg4 : plus
+    """
+
+    def __init__(self, left, right):
+        self.left = left
+        self.right = right
+
+    def toOutputString(self):
+        return self.left.toOutputString() + ":" + self.right.toOutputString()
+
+    def mesh(self):
+        return self.left.mesh().union(self.right.mesh())
+
+
+class Complement:
+    """
+    mcnp : hyphen for surface, hash for cell
+    pyg4 : exclamation mark
+    """
+
+    def __init__(self, item):
+        self.item = item
+
+    def toOutputString(self):
+        if isinstance(self.item, Surface):
+            return "-" + str(self.item.surfaceNumber)
+        elif isinstance(self.item, Cell):
+            return "#" + str(self.item.cellNumber)
+        else:
+            return "#" + self.item.toOutputString()
+
+    def mesh(self):
+        mesh = self.item.mesh()
+        bigBox = mesh.cube(center=[0, 0, 0], radius=[inf, inf, inf])  # big box (universe)
+
+        return bigBox.subtract(mesh)
 
 
 class Surface:
