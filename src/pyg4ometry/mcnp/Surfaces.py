@@ -1666,10 +1666,10 @@ class RCC(Surface):
 
         mesh = geom2.mesh()
 
-        axisIn = _np.cross([0, 0, 1], [self.hx, self.hy, self.hz])
-        dot_product = _np.dot([0, 0, 1], [self.hx, self.hy, self.hz])
-        norm_h = _np.linalg.norm([self.hx, self.hy, self.hz])
-        angleRad = _np.arccos(dot_product / norm_h)
+        axisIn = _np.cross([self.hx, self.hy, self.hz], [0, 0, 1])
+        dotProduct = _np.dot([0, 0, 1], [self.hx, self.hy, self.hz])
+        hNorm = _np.linalg.norm([self.hx, self.hy, self.hz])
+        angleRad = _np.arccos(dotProduct / hNorm)
         angleDeg = _np.degrees(angleRad)
         if _np.linalg.norm(axisIn) != 0:
             axisIn = axisIn / _np.linalg.norm(axisIn)
