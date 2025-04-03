@@ -149,17 +149,19 @@ def test_RPP():
     print(surface)
 
 
-"""
 def test_SPH():
     reg = pyg4ometry.mcnp.Registry()
-    surface = pyg4ometry.mcnp.XYZ(, reg=reg)
+    surface = pyg4ometry.mcnp.XYZ(0, 4, 5, 5, reg=reg)
     print(surface)
+
 
 def test_RCC():
     reg = pyg4ometry.mcnp.Registry()
-    surface = pyg4ometry.mcnp.RCC(, reg=reg)
+    surface = pyg4ometry.mcnp.RCC(0, 0, 2, 3, 4, 0, 2, reg=reg)
     print(surface)
 
+
+"""
 def test_RHP_HEX():
     reg = pyg4ometry.mcnp.Registry()
     surface = pyg4ometry.mcnp.RHP_HEX(, reg=reg)
