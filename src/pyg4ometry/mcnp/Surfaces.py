@@ -1520,7 +1520,7 @@ class BOX(Surface):
             C=self.a2z,
             D=self.a2x * (self.vx + self.a2x)
             + self.a2y * (self.vy + self.a2y)
-            + self.a2z * (self.vz + self.a3z),
+            + self.a2z * (self.vz + self.a2z),
         )
         p5 = P(
             A=self.a3x,
@@ -1695,27 +1695,27 @@ class RHP_HEX(Surface):
 
     def __init__(
         self,
-        vx,
-        vy,
-        vz,
+        v1,
+        v2,
+        v3,
         h1,
         h2,
         h3,
         r1,
         r2,
         r3,
-        s1,
-        s2,
-        s3,
-        t1,
-        t2,
-        t3,
+        s1=None,
+        s2=None,
+        s3=None,
+        t1=None,
+        t2=None,
+        t3=None,
         reg=None,
         surfaceNumber=None,
     ):
-        self.vx = vx
-        self.vy = vy
-        self.vz = vz
+        self.v1 = v1
+        self.v2 = v2
+        self.v3 = v3
         self.h1 = h1
         self.h2 = h2
         self.h3 = h3
@@ -1732,12 +1732,85 @@ class RHP_HEX(Surface):
 
     def __repr__(self):
         return (
-            f"RHP {self.vx} {self.vy} {self.vz}"
+            f"RHP {self.v1} {self.v2} {self.v3}"
             f" {self.h1} {self.h2} {self.h3}"
             f" {self.r1} {self.r2} {self.r3}"
             f" {self.s1} {self.s2} {self.s3}"
             f" {self.t1} {self.t2} {self.t3}"
         )
+
+    def mesh(self):
+        reg = g4Reg()
+
+        if (
+            self.s1 is None
+            and self.s2 is None
+            and self.s3 is None
+            and self.t1 is None
+            and self.t2 is None
+            and self.t3 is None
+        ):  # regular hexagon
+            self.s1, self.s2, self.s3 = _np.sqrt(3), 1, 0
+            self.t1, self.t2, self.t3 = -_np.sqrt(3), 1, 0
+
+        p1 = P(0, 0, 1, -(self.v3 + self.h3))  # Top face
+        p2 = P(0, 0, 1, -self.v3)  # Bottom face
+
+        p3 = P(
+            self.r1,
+            self.r2,
+            0,
+            -(self.r1 * self.v1 + self.r2 * self.v2 + (self.r1**2 + self.r2**2)),
+        )  # Side face 1
+        p4 = P(
+            self.r1,
+            self.r2,
+            0,
+            -(self.r1 * self.v1 + self.r2 * self.v2 - (self.r1**2 + self.r2**2)),
+        )  # Opposite side
+
+        p5 = P(
+            self.s1,
+            self.s2,
+            0,
+            -(self.s1 * self.v1 + self.s2 * self.v2 + (self.s1**2 + self.s2**2)),
+        )  # Side face 2
+        p6 = P(
+            self.s1,
+            self.s2,
+            0,
+            -(self.s1 * self.v1 + self.s2 * self.v2 - (self.s1**2 + self.s2**2)),
+        )  # Opposite side
+
+        p7 = P(
+            self.t1,
+            self.t2,
+            0,
+            -(self.t1 * self.v1 + self.t2 * self.v2 + (self.t1**2 + self.t2**2)),
+        )  # Side face 3
+        p8 = P(
+            self.t1,
+            self.t2,
+            0,
+            -(self.t1 * self.v1 + self.t2 * self.v2 - (self.t1**2 + self.t2**2)),
+        )  # Opposite side
+
+        geom1 = Intersection(p1, Complement(p2))  # Top and bottom faces
+
+        geom2 = Intersection(p3, Complement(p4))  # Side faces
+        geom3 = Intersection(p5, Complement(p6))
+        geom4 = Intersection(p7, Complement(p8))
+
+        geom5 = Intersection(geom1, geom2)
+        geom6 = Intersection(geom3, geom4)
+        geom7 = Intersection(geom5, geom6)
+
+        mesh = geom7.mesh()
+
+        # disp = [self.v1, self.v2, self.v3]
+        # mesh.translate(disp)
+
+        return mesh
 
 
 class REC(Surface):
