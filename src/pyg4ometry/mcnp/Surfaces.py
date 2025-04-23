@@ -97,26 +97,36 @@ class Surface:
     def toOutputString(self):
         return str(self.surfaceNumber)
 
+    def __rotationAboutAxis__(self, a, b):
+        a = a / _np.linalg.norm(a)
+        b = b / _np.linalg.norm(b)
 
-class Macrobody(Surface):
-    def __init__(self):
-        super().__init__()
+        axisIn = _np.cross(a, b)  # rotation axis
+        axisInNorm = _np.linalg.norm(axisIn)
 
-    def __rotationMatrixFromVectors__(self, a, b):
-        a = a / _np.linalg.norm(a)  # aligned axis
-        b = b / _np.linalg.norm(b)  # height vector
-        v = _np.cross(a, b)  # translation
-        c = _np.dot(a, b)
+        # Dot product gives cos(angle)
+        dotProduct = _np.dot(a, b)
+        angleRad = _np.arccos(dotProduct)
+        angleDeg = _np.degrees(angleRad)
 
-        if _np.allclose(v, 0):  # already aligned
-            return _np.eye(3) if c > 0 else -_np.eye(3)  # flip if 180 deg to aligned axis
+        if axisInNorm < 1e-9:  # a and b vectors are aligned or opposite
+            if dotProduct > 0:  # no rotation needed
+                axisIn = _np.array([1, 0, 0])
+                return axisIn, 0.0
+            else:  # 180-degree rotation to axis
+                # a and b are opposite
+                # need a perpendicular rotation axis
+                # find any vector perpendicular to a
+                perp = _np.zeros(3)
+                minIndex = _np.argmin(_np.abs(a))  # component with smallest magnitude
+                perp[minIndex] = 1.0
+                axisIn = _np.cross(a, perp)
+                axisIn = axisIn / _np.linalg.norm(axisIn)
+                return axisIn, 180.0
+        else:
+            axisIn = axisIn / axisInNorm
 
-        vx = _np.array([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0]])
-
-        vx2 = _np.matmul(vx, vx)
-        factor = (1 - c) / (_np.linalg.norm(v) ** 2)
-        R = _np.eye(3) + vx + vx2 * factor  # rotation matrix
-        return R
+        return axisIn, angleDeg
 
 
 class SurfaceSolve(Surface):
@@ -1678,22 +1688,17 @@ class RCC(Surface):
             registry=reg,
         )
 
-        h = _np.sqrt(self.hx**2 + self.hy**2 + self.hz**2)
+        h = _np.array([self.hx, self.hy, self.hz])
+        hMag = _np.sqrt(self.hx**2 + self.hy**2 + self.hz**2)
         p1 = PZ(0)
-        p2 = PZ(h)
+        p2 = PZ(hMag)
 
         geom1 = Intersection(p1, Complement(p2))
         geom2 = Intersection(geom1, c1)
 
         mesh = geom2.mesh()
 
-        axisIn = _np.cross([self.hx, self.hy, self.hz], [0, 0, 1])
-        dotProduct = _np.dot([0, 0, 1], [self.hx, self.hy, self.hz])
-        hNorm = _np.linalg.norm([self.hx, self.hy, self.hz])
-        angleRad = _np.arccos(dotProduct / hNorm)
-        angleDeg = _np.degrees(angleRad)
-        if _np.linalg.norm(axisIn) != 0:
-            axisIn = axisIn / _np.linalg.norm(axisIn)
+        axisIn, angleDeg = self.__rotationAboutAxis__(h, [0, 0, 1])
         mesh.rotate(axisIn, angleDeg)
         disp = [self.vx, self.vy, self.vz]
         mesh.translate(disp)
@@ -1768,25 +1773,6 @@ class RHP_HEX(Surface):
         t = _np.array([self.t1, self.t2, self.t3])
         h = _np.array([self.h1, self.h2, self.h3])
 
-        """
-        if h is z-aligned
-            M = identity
-        else
-            calculate rotation M
-        if v is zero
-            disp = 0
-        else
-            disp = -v
-
-        calculate hp zp rp sp tp
-        make mesh on primes
-
-        if M is non-identity
-            rotate mesh
-        if disp non zero
-            translate mesh
-        """
-
         reg = g4Reg()
         if (
             self.s1 is None
@@ -1796,32 +1782,42 @@ class RHP_HEX(Surface):
             and self.t2 is None
             and self.t3 is None
         ):  # regular hexagon
-            s = _np.array([_np.sqrt(3), 1, 0])
-            t = _np.array([-_np.sqrt(3), 1, 0])
+            s1 = _np.sqrt(3) / 2 * r[1] + 1 / 2 * r[0]
+            s2 = _np.sqrt(3) / 2 * r[0] - 1 / 2 * r[1]
+            s3 = 0
+            t1 = -_np.sqrt(3) / 2 * r[1] + 1 / 2 * r[0]
+            t2 = -_np.sqrt(3) / 2 * r[0] - 1 / 2 * r[1]
+            t3 = 0
+            s = _np.array([s1, s2, s3])
+            t = _np.array([t1, t2, t3])
 
         A, B, C = 0, 0, 1
-        D1 = v[2] + h[2]
-        D2 = v[2]
+        D1 = _np.linalg.norm(h)
+        D2 = _np.linalg.norm([0, 0, 0])
         p1 = P(A, B, C, D1)  # top face
         p2 = P(A, B, C, D2)  # bottom face
+        print(A, B, C, D1, D2)
 
-        A, B, C = r
-        D1 = _np.dot(r, v) + (A**2 + B**2 + C**2)
-        D2 = _np.dot(r, v) - (A**2 + B**2 + C**2)
+        A, B, C = r * 2
+        D1 = _np.linalg.norm(r)
+        D2 = -_np.linalg.norm(r)
         p3 = P(A, B, C, D1)  # r face
         p4 = P(A, B, C, D2)  # r opposite side
+        print(A, B, C, D1, D2)
 
         A, B, C = s
-        D1 = _np.dot(s, v) + (A**2 + B**2 + C**2)
-        D2 = _np.dot(s, v) - (A**2 + B**2 + C**2)
+        D1 = _np.linalg.norm(s)
+        D2 = -_np.linalg.norm(s)
         p5 = P(A, B, C, D1)  # s face
         p6 = P(A, B, C, D2)  # s opposite side
+        print(A, B, C, D1, D2)
 
         A, B, C = t
-        D1 = _np.dot(t, v) + (A**2 + B**2 + C**2)
-        D2 = _np.dot(t, v) - (A**2 + B**2 + C**2)
+        D1 = _np.linalg.norm(t)
+        D2 = -_np.linalg.norm(t)
         p7 = P(A, B, C, D1)  # t face
         p8 = P(A, B, C, D2)  # t opposite side
+        print(A, B, C, D1, D2)
 
         geom1 = Intersection(p2, Complement(p1))  # top and bottom
         geom2 = Intersection(p4, Complement(p3))  # r
@@ -1834,7 +1830,90 @@ class RHP_HEX(Surface):
 
         mesh = geom7.mesh()
 
+        axisIn, angleDeg = self.__rotationAboutAxis__(h, [0, 0, 1])
+        mesh.rotate(axisIn, angleDeg)
+        disp = v
+        mesh.translate(disp)
+
         return mesh
+
+
+"""
+    def mesh(self):
+
+        v = _np.array([self.v1, self.v2, self.v3])
+        r = _np.array([self.r1, self.r2, self.r3])
+        s = _np.array([self.s1, self.s2, self.s3])
+        t = _np.array([self.t1, self.t2, self.t3])
+        h = _np.array([self.h1, self.h2, self.h3])
+
+        reg = g4Reg()
+        if (
+            self.s1 is None
+            and self.s2 is None
+            and self.s3 is None
+            and self.t1 is None
+            and self.t2 is None
+            and self.t3 is None
+        ):  # regular hexagon
+            s = _np.array([_np.sqrt(3), 1, 0])
+            t = _np.array([-_np.sqrt(3), 1, 0])
+            #s = _np.array([1, _np.sqrt(3), 0])
+            #t = _np.array([1, -_np.sqrt(3), 0])
+
+        A, B, C = 0, 0, 1
+        #D1 = v[2] + h[2]
+        #D2 = v[2]
+        D1 = _np.linalg.norm(v) + _np.linalg.norm(h)
+        D2 = _np.linalg.norm(v)
+        p1 = P(A, B, C, D1)  # top face
+        p2 = P(A, B, C, D2)  # bottom face
+        print(A, B, C, D1, D2)
+
+        A, B, C = r
+        D1 = _np.dot(r, v) + (A**2 + B**2 + C**2)
+        D2 = _np.dot(r, v) - (A**2 + B**2 + C**2)
+        p3 = P(A, B, C, D1)  # r face
+        p4 = P(A, B, C, D2)  # r opposite side
+        print(A, B, C, D1, D2)
+
+        A, B, C = s
+        D1 = _np.dot(s, v) + (A**2 + B**2 + C**2)
+        D2 = _np.dot(s, v) - (A**2 + B**2 + C**2)
+        p5 = P(A, B, C, D1)  # s face
+        p6 = P(A, B, C, D2)  # s opposite side
+        print(A, B, C, D1, D2)
+
+        A, B, C = t
+        D1 = _np.dot(t, v) + (A**2 + B**2 + C**2)
+        D2 = _np.dot(t, v) - (A**2 + B**2 + C**2)
+        p7 = P(A, B, C, D1)  # t face
+        p8 = P(A, B, C, D2)  # t opposite side
+        print(A, B, C, D1, D2)
+
+        geom1 = Intersection(p2, Complement(p1))  # top and bottom
+        geom2 = Intersection(p4, Complement(p3))  # r
+        geom3 = Intersection(p6, Complement(p5))  # s
+        geom4 = Intersection(p8, Complement(p7))  # t
+
+        geom5 = Intersection(geom1, geom2)
+        geom6 = Intersection(geom3, geom4)
+        geom7 = Intersection(geom5, geom6)
+
+        hMag = _np.linalg.norm(h)
+        p1 = PZ(0)
+        p2 = PZ(hMag)
+
+        mesh = geom7.mesh()
+        return mesh
+
+        #axisIn, angleDeg = self.__rotationAboutAxis__(h, [0, 0, 1])
+        #mesh.rotate(axisIn, angleDeg)
+        #disp = v
+        #mesh.translate(disp)
+
+        return mesh
+"""
 
 
 class REC(Surface):
