@@ -1796,28 +1796,24 @@ class RHP_HEX(Surface):
         D2 = _np.linalg.norm([0, 0, 0])
         p1 = P(A, B, C, D1)  # top face
         p2 = P(A, B, C, D2)  # bottom face
-        print(A, B, C, D1, D2)
 
         A, B, C = r * 2
         D1 = _np.linalg.norm(r)
         D2 = -_np.linalg.norm(r)
         p3 = P(A, B, C, D1)  # r face
         p4 = P(A, B, C, D2)  # r opposite side
-        print(A, B, C, D1, D2)
 
         A, B, C = s
         D1 = _np.linalg.norm(s)
         D2 = -_np.linalg.norm(s)
         p5 = P(A, B, C, D1)  # s face
         p6 = P(A, B, C, D2)  # s opposite side
-        print(A, B, C, D1, D2)
 
         A, B, C = t
         D1 = _np.linalg.norm(t)
         D2 = -_np.linalg.norm(t)
         p7 = P(A, B, C, D1)  # t face
         p8 = P(A, B, C, D2)  # t opposite side
-        print(A, B, C, D1, D2)
 
         geom1 = Intersection(p2, Complement(p1))  # top and bottom
         geom2 = Intersection(p4, Complement(p3))  # r
@@ -1836,84 +1832,6 @@ class RHP_HEX(Surface):
         mesh.translate(disp)
 
         return mesh
-
-
-"""
-    def mesh(self):
-
-        v = _np.array([self.v1, self.v2, self.v3])
-        r = _np.array([self.r1, self.r2, self.r3])
-        s = _np.array([self.s1, self.s2, self.s3])
-        t = _np.array([self.t1, self.t2, self.t3])
-        h = _np.array([self.h1, self.h2, self.h3])
-
-        reg = g4Reg()
-        if (
-            self.s1 is None
-            and self.s2 is None
-            and self.s3 is None
-            and self.t1 is None
-            and self.t2 is None
-            and self.t3 is None
-        ):  # regular hexagon
-            s = _np.array([_np.sqrt(3), 1, 0])
-            t = _np.array([-_np.sqrt(3), 1, 0])
-            #s = _np.array([1, _np.sqrt(3), 0])
-            #t = _np.array([1, -_np.sqrt(3), 0])
-
-        A, B, C = 0, 0, 1
-        #D1 = v[2] + h[2]
-        #D2 = v[2]
-        D1 = _np.linalg.norm(v) + _np.linalg.norm(h)
-        D2 = _np.linalg.norm(v)
-        p1 = P(A, B, C, D1)  # top face
-        p2 = P(A, B, C, D2)  # bottom face
-        print(A, B, C, D1, D2)
-
-        A, B, C = r
-        D1 = _np.dot(r, v) + (A**2 + B**2 + C**2)
-        D2 = _np.dot(r, v) - (A**2 + B**2 + C**2)
-        p3 = P(A, B, C, D1)  # r face
-        p4 = P(A, B, C, D2)  # r opposite side
-        print(A, B, C, D1, D2)
-
-        A, B, C = s
-        D1 = _np.dot(s, v) + (A**2 + B**2 + C**2)
-        D2 = _np.dot(s, v) - (A**2 + B**2 + C**2)
-        p5 = P(A, B, C, D1)  # s face
-        p6 = P(A, B, C, D2)  # s opposite side
-        print(A, B, C, D1, D2)
-
-        A, B, C = t
-        D1 = _np.dot(t, v) + (A**2 + B**2 + C**2)
-        D2 = _np.dot(t, v) - (A**2 + B**2 + C**2)
-        p7 = P(A, B, C, D1)  # t face
-        p8 = P(A, B, C, D2)  # t opposite side
-        print(A, B, C, D1, D2)
-
-        geom1 = Intersection(p2, Complement(p1))  # top and bottom
-        geom2 = Intersection(p4, Complement(p3))  # r
-        geom3 = Intersection(p6, Complement(p5))  # s
-        geom4 = Intersection(p8, Complement(p7))  # t
-
-        geom5 = Intersection(geom1, geom2)
-        geom6 = Intersection(geom3, geom4)
-        geom7 = Intersection(geom5, geom6)
-
-        hMag = _np.linalg.norm(h)
-        p1 = PZ(0)
-        p2 = PZ(hMag)
-
-        mesh = geom7.mesh()
-        return mesh
-
-        #axisIn, angleDeg = self.__rotationAboutAxis__(h, [0, 0, 1])
-        #mesh.rotate(axisIn, angleDeg)
-        #disp = v
-        #mesh.translate(disp)
-
-        return mesh
-"""
 
 
 class REC(Surface):
