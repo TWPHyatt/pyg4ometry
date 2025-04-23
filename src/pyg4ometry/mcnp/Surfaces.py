@@ -1778,77 +1778,42 @@ class RHP_HEX(Surface):
             s = _np.array([_np.sqrt(3), 1, 0])
             t = _np.array([-_np.sqrt(3), 1, 0])
 
-            A, B, C = 0, 0, 1
-            D1 = v[2] + h[2]
-            D2 = v[2]
-            p1 = P(A, B, C, D1)  # top face
-            p2 = P(A, B, C, D2)  # bottom face
-            print(A, B, C, D1)
-            print(A, B, C, D2)
+        A, B, C = 0, 0, 1
+        D1 = v[2] + h[2]
+        D2 = v[2]
+        p1 = P(A, B, C, D1)  # top face
+        p2 = P(A, B, C, D2)  # bottom face
 
-            A, B, C = r
-            D1 = _np.dot(r, v) + (A**2 + B**2 + C**2)
-            D2 = _np.dot(r, v) - (A**2 + B**2 + C**2)
-            p3 = P(A, B, C, D1)  # r face
-            p4 = P(A, B, C, D2)  # r opposite side
-            print(A, B, C, D1)
-            print(A, B, C, D2)
+        A, B, C = r
+        D1 = _np.dot(r, v) + (A**2 + B**2 + C**2)
+        D2 = _np.dot(r, v) - (A**2 + B**2 + C**2)
+        p3 = P(A, B, C, D1)  # r face
+        p4 = P(A, B, C, D2)  # r opposite side
 
-            A, B, C = s
-            D1 = _np.dot(s, v) + (A**2 + B**2 + C**2)
-            D2 = _np.dot(s, v) - (A**2 + B**2 + C**2)
-            p5 = P(A, B, C, D1)  # s face
-            p6 = P(A, B, C, D2)  # s opposite side
-            print(A, B, C, D1)
-            print(A, B, C, D2)
+        A, B, C = s
+        D1 = _np.dot(s, v) + (A**2 + B**2 + C**2)
+        D2 = _np.dot(s, v) - (A**2 + B**2 + C**2)
+        p5 = P(A, B, C, D1)  # s face
+        p6 = P(A, B, C, D2)  # s opposite side
 
-            A, B, C = t
-            D1 = _np.dot(t, v) + (A**2 + B**2 + C**2)
-            D2 = _np.dot(t, v) - (A**2 + B**2 + C**2)
-            p7 = P(A, B, C, D1)  # t face
-            p8 = P(A, B, C, D2)  # t opposite side
-            print(A, B, C, D1)
-            print(A, B, C, D2)
+        A, B, C = t
+        D1 = _np.dot(t, v) + (A**2 + B**2 + C**2)
+        D2 = _np.dot(t, v) - (A**2 + B**2 + C**2)
+        p7 = P(A, B, C, D1)  # t face
+        p8 = P(A, B, C, D2)  # t opposite side
 
-            """
-            # top and bottom planes
-            p1 = makePlane([0, 0, 1], v+h)  # top face
-            p2 = makePlane([0, 0, -1], v)  # bottom face
+        geom1 = Intersection(p2, Complement(p1))  # top and bottom
+        geom2 = Intersection(p4, Complement(p3))  # r
+        geom3 = Intersection(p6, Complement(p5))  # s
+        geom4 = Intersection(p8, Complement(p7))  # t
 
-            # r planes
-            rNormal = _np.cross(h, r) / _np.linalg.norm(_np.cross(h, r))  # (outward facing) unit normal of the r plane
-            rCentre = v + r  # centre of the r face
-            rCenterOpp = v - r   # centre of the opposite r face
-            p3 = makePlane(rNormal, rCentre)  # r face
-            p4 = makePlane(-rNormal, rCenterOpp)  # r opposite side
+        geom5 = Intersection(geom1, geom2)
+        geom6 = Intersection(geom3, geom4)
+        geom7 = Intersection(geom5, geom6)
 
-            # s planes
-            sNormal = _np.cross(h, s) / _np.linalg.norm(_np.cross(h, s))  # (outward facing) unit normal of the s plane
-            sCentre = v + s  # centre of the r face
-            sCenterOpp = v - s   # centre of the opposite r face
-            p5 = makePlane(sNormal, sCentre)  # s face
-            p6 = makePlane(-sNormal, sCenterOpp)  # s opposite side
+        mesh = geom7.mesh()
 
-            # t planes
-            tNormal = _np.cross(h, t) / _np.linalg.norm(_np.cross(h, t))  # (outward facing) unit normal of the t plane
-            tCentre = v + t  # centre of the r face
-            tCenterOpp = v - t   # centre of the opposite r face
-            p7 = makePlane(tNormal, tCentre)  # t face
-            p8 = makePlane(-tNormal, tCenterOpp)  # t opposite side
-            """
-
-            geom1 = Intersection(p2, Complement(p1))  # top and bottom
-            geom2 = Intersection(p4, Complement(p3))  # r
-            geom3 = Intersection(p6, Complement(p5))  # s
-            geom4 = Intersection(p8, Complement(p7))  # t
-
-            geom5 = Intersection(geom1, geom2)
-            geom6 = Intersection(geom3, geom4)
-            geom7 = Intersection(geom5, geom6)
-
-            mesh = geom7.mesh()
-
-            return mesh
+        return mesh
 
 
 class REC(Surface):
