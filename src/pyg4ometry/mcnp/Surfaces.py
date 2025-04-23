@@ -98,6 +98,22 @@ class Surface:
         return str(self.surfaceNumber)
 
 
+class Macrobody(Surface):
+    def __init__(self):
+        super().__init__()
+
+    def __rotationMatrixFromVectors__(self, a, b):
+        a = a / _np.linalg.norm(a)  # aligned axis
+        b = b / _np.linalg.norm(b)  # height vector
+        v = _np.cross(a, b)
+        c = _np.dot(a, b)
+        if _np.allclose(v, 0):  # already aligned
+            return _np.eye(3) if c > 0 else -_np.eye(3)  # flip if 180 deg to aligned axis
+        vx = _np.array([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0]])
+        R = _np.eye(3) + vx + vx @ vx * ((1 - c) / (_np.linalg.norm(v) ** 2))
+        return R
+
+
 class SurfaceSolve(Surface):
     def __init__(self, coordNum):
         super().__init__()
