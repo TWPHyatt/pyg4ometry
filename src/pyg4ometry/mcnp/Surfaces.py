@@ -1,4 +1,5 @@
 import numpy as _np
+import numpy as np
 import sympy as _sp
 from .Cell import Cell
 from ..pycgal.Point_3 import Point_3_ECER as _Point_3_ECER
@@ -1845,8 +1846,22 @@ class REC(Surface):
     """
 
     def __init__(
-        self, vx, vy, vz, hx, hy, hz, v1x, v1y, v1z, v2x, v2y, v2z, reg=None, surfaceNumber=None
-    ):
+        self,
+        vx,
+        vy,
+        vz,
+        hx,
+        hy,
+        hz,
+        v1x,
+        v1y,
+        v1z,
+        v2x,
+        v2y=None,
+        v2z=None,
+        reg=None,
+        surfaceNumber=None,
+    ):  # if 10 entries instead of 12, the 10th entry (v2x) is the minor axis radius
         self.vx = vx
         self.vy = vy
         self.vz = vz
@@ -1862,12 +1877,66 @@ class REC(Surface):
         super().__init__(reg, surfaceNumber)
 
     def __repr__(self):
-        return (
-            f"REC {self.vx} {self.vy} {self.vz}"
-            f" {self.hx} {self.hy} {self.hz}"
-            f" {self.v1x} {self.v1y} {self.v1z}"
-            f" {self.v2x} {self.v2y} {self.v2z}"
+        if self.v2y is None and self.v2z is None:
+            return (
+                f"REC {self.vx} {self.vy} {self.vz}"
+                f" {self.hx} {self.hy} {self.hz}"
+                f" {self.v1x} {self.v1y} {self.v1z}"
+                f" {self.v2x}"  # with 10 entries, v2x becomes the minor axis radius
+            )
+        else:
+            return (
+                f"REC {self.vx} {self.vy} {self.vz}"
+                f" {self.hx} {self.hy} {self.hz}"
+                f" {self.v1x} {self.v1y} {self.v1z}"
+                f" {self.v2x} {self.v2y} {self.v2z}"
+            )
+
+    def mesh(self):
+        v = _np.array([self.vx, self.vy, self.vz])
+        h = _np.array([self.hx, self.hy, self.hz])
+        v1 = _np.array([self.v1x, self.v1y, self.v1z])
+
+        if (
+            self.v2y is None and self.v2z is None
+        ):  # with 10 entries, v2x becomes the minor axis radius
+            v2 = _np.cross(
+                h, v1
+            )  # direction of minor axis is determined from the cross product of h and v1 vectors
+            if np.allclose(v2, np.zeros(len(v2))):
+                msg = "The vectors h and v1 must be orthogonal"
+                raise ValueError(msg)
+            else:
+                v2 = v2 / _np.linalg.norm(v2) * self.v2x
+        else:
+            v2 = _np.array([self.v2x, self.v2y, self.v2z])
+
+        reg = g4Reg()
+
+        c1 = EllipticalTube(
+            name="",
+            pDx=_np.linalg.norm(v1),  # ellipse major axis
+            pDy=_np.linalg.norm(v2),  # ellipse minor axis
+            pDz=inf,
+            registry=reg,
         )
+
+        h = _np.array([self.hx, self.hy, self.hz])
+        hMag = _np.sqrt(self.hx**2 + self.hy**2 + self.hz**2)
+        p1 = PZ(0)
+        p2 = PZ(hMag)
+
+        geom1 = Intersection(p1, Complement(p2))
+        geom2 = Intersection(geom1, c1)
+
+        mesh = geom2.mesh()
+
+        axisIn, angleDeg = self.__rotationAboutAxis__(h, [0, 0, 1])
+        mesh.rotate(axisIn, angleDeg)
+        disp = [self.vx, self.vy, self.vz]
+        mesh.translate(disp)
+
+        return mesh
 
 
 class TRC(Surface):
