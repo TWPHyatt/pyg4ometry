@@ -257,17 +257,54 @@ def test_RHP_HEX7():
     print(surface)
 
 
-"""
 def test_REC():
+    """
+    REC about the y-axis
+    centre of the base plane is at x,y,z = 0,-5,0
+    major radius = 4 in the x-direction
+    minor radius = 2 in the z-direction
+    """
     reg = pyg4ometry.mcnp.Registry()
-    surface = pyg4ometry.mcnp.REC(, reg=reg)
+    surface = pyg4ometry.mcnp.REC(0, -5, 0, 0, 10, 0, 4, 0, 0, 2, reg=reg)
     print(surface)
+
+
+# def test_REC():
+#    reg = pyg4ometry.mcnp.Registry()
+#    surface = pyg4ometry.mcnp.REC(, reg=reg)
+#    print(surface)
+
+
+# def test_REC():
+#    reg = pyg4ometry.mcnp.Registry()
+#    surface = pyg4ometry.mcnp.REC(, reg=reg)
+#    print(surface)
+
 
 def test_TRC():
+    """
+    TRC about the x-axis
+    centre of the base plane is at x,y,z = -5,0,0
+    top radius = 4 at x,y,z = -5,0,0
+    bottom radius = 2 at x,y,z = 5,0,0
+    """
     reg = pyg4ometry.mcnp.Registry()
-    surface = pyg4ometry.mcnp.TRC(, reg=reg)
+    surface = pyg4ometry.mcnp.TRC(-5, 0, 0, 10, 0, 0, 4, 2, reg=reg)
     print(surface)
 
+
+# def test_TRC():
+#    reg = pyg4ometry.mcnp.Registry()
+#    surface = pyg4ometry.mcnp.TRC(, reg=reg)
+#    print(surface)
+
+
+# def test_TRC():
+#    reg = pyg4ometry.mcnp.Registry()
+#    surface = pyg4ometry.mcnp.TRC(, reg=reg)
+#    print(surface)
+
+"""
 def test_ELL():
     reg = pyg4ometry.mcnp.Registry()
     surface = pyg4ometry.mcnp.ELL(, reg=reg)
