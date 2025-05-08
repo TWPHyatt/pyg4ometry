@@ -1681,7 +1681,7 @@ class RCC(Surface):
     def mesh(self):
         reg = g4Reg()
 
-        c1 = EllipticalTube(
+        solid = EllipticalTube(
             name="",
             pDx=self.r,
             pDy=self.r,
@@ -1695,7 +1695,7 @@ class RCC(Surface):
         p2 = PZ(hMag)
 
         geom1 = Intersection(p1, Complement(p2))
-        geom2 = Intersection(geom1, c1)
+        geom2 = Intersection(geom1, solid)
 
         mesh = geom2.mesh()
 
@@ -1900,20 +1900,21 @@ class REC(Surface):
         if (
             self.v2y is None and self.v2z is None
         ):  # with 10 entries, v2x becomes the minor axis radius
-            v2 = _np.cross(
-                h, v1
-            )  # direction of minor axis is determined from the cross product of h and v1 vectors
+            # direction of minor axis is determined from the cross product of h and v1 vectors
+            print("v2y and v2z are None")
+            v2 = _np.cross(h, v1)
             if np.allclose(v2, np.zeros(len(v2))):
                 msg = "The vectors h and v1 must be orthogonal"
                 raise ValueError(msg)
             else:
                 v2 = v2 / _np.linalg.norm(v2) * self.v2x
+                print(v2)
         else:
             v2 = _np.array([self.v2x, self.v2y, self.v2z])
 
         reg = g4Reg()
 
-        c1 = EllipticalTube(
+        solid = EllipticalTube(
             name="",
             pDx=_np.linalg.norm(v1),  # ellipse major axis
             pDy=_np.linalg.norm(v2),  # ellipse minor axis
@@ -1927,7 +1928,7 @@ class REC(Surface):
         p2 = PZ(hMag)
 
         geom1 = Intersection(p1, Complement(p2))
-        geom2 = Intersection(geom1, c1)
+        geom2 = Intersection(geom1, solid)
 
         mesh = geom2.mesh()
 
@@ -1966,6 +1967,53 @@ class TRC(Surface):
             f" {self.hx} {self.hy} {self.hz}"
             f" {self.r1} {self.r2}"
         )
+
+    def mesh(self):
+        reg = g4Reg()
+
+        # G4 cone has eqn: (x/xSemiAxis)**2 + (y/ySemiAxis)**2 = (zHeight - z)**2
+        # G4 elliptical sections: dx = xSemiAxis * zHeight dy = ySemiAxis * zHeight
+        # xSemiAxis and ySemiAxis are scaling factors figured out from elliptical sections at z=0
+        # R(z=0) = xSemiAxis * zHeight   >>>    xSemiAxis = R(z=0) / zHeight
+        # R(z=-zTopCut) = r1
+        # R(z=+zTopCut) = r2
+        # >>> r1 = xSemiAxis * (zHeight + zTopCut)
+        #   & r2 = xSemiAxis * (zHeight - zTopCut)
+        # r1 - r2 = xSemiAxis * (2*zTopCut)
+        # >>> xSemiAxis = (r1 - r2) / (2 * zTopCut)  {*}
+        # r2 = {(r1 - r2) / (2 * zTopCut)} * (zHeight - zTopCut)
+        # >>> r2 * (2 * zTopCut) = (r1 - r2) * (zHeight - zTopCut)
+        # >>> zHeight = ((r2 * (2 * zTopCut)) / (r1 - r2)) + zTopCut   =   (((r2 * 2) / (r1 - r2)) + 1) * zTopCut  {*}
+
+        h = _np.array([self.hx, self.hy, self.hz])
+        hMag = _np.sqrt(self.hx**2 + self.hy**2 + self.hz**2)
+        zTopCut = hMag / 2
+        zHeight = zTopCut * (1 + ((2 * self.r2) / (self.r1 - self.r2)))
+        xSemiAxis = (self.r1 - self.r2) / (2 * zTopCut)
+        ySemiAxis = xSemiAxis
+
+        solid = EllipticalCone(
+            name="",
+            pxSemiAxis=xSemiAxis,
+            pySemiAxis=ySemiAxis,
+            zMax=zHeight,
+            pzTopCut=zTopCut,
+            registry=reg,
+        )
+
+        p1 = PZ(-zTopCut)
+
+        geom1 = Intersection(p1, Complement(solid))
+        mesh = geom1.mesh()
+
+        disp = [0, 0, zTopCut]
+        mesh.translate(disp)
+        axisIn, angleDeg = self.__rotationAboutAxis__(h, [0, 0, 1])
+        mesh.rotate(axisIn, angleDeg)
+        disp = [self.vx, self.vy, self.vz]
+        mesh.translate(disp)
+
+        return mesh
 
 
 class ELL(Surface):
