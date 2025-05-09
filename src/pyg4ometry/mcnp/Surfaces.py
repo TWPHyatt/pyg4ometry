@@ -105,7 +105,6 @@ class Surface:
         axisIn = _np.cross(a, b)  # rotation axis
         axisInNorm = _np.linalg.norm(axisIn)
 
-        # Dot product gives cos(angle)
         dotProduct = _np.dot(a, b)
         angleRad = _np.arccos(dotProduct)
         angleDeg = _np.degrees(angleRad)
@@ -117,7 +116,7 @@ class Surface:
             else:  # 180-degree rotation to axis
                 # a and b are opposite
                 # need a perpendicular rotation axis
-                # find any vector perpendicular to a
+                # so find any vector perpendicular to a
                 perp = _np.zeros(3)
                 minIndex = _np.argmin(_np.abs(a))  # component with smallest magnitude
                 perp[minIndex] = 1.0
@@ -127,6 +126,7 @@ class Surface:
         else:
             axisIn = axisIn / axisInNorm
 
+        print("Axis: ", axisIn, " Deg: ", angleDeg)
         return axisIn, angleDeg
 
 
@@ -1958,6 +1958,9 @@ class TRC(Surface):
         self.hy = hy
         self.hz = hz
         self.r1 = r1
+        if r2 >= r1:
+            msg = "r1 must be greater than r2"
+            raise ValueError(msg)
         self.r2 = r2
         super().__init__(reg, surfaceNumber)
 
@@ -1994,8 +1997,10 @@ class TRC(Surface):
 
         solid = EllipticalCone(
             name="",
-            pxSemiAxis=xSemiAxis,
-            pySemiAxis=ySemiAxis,
+            # pxSemiAxis=xSemiAxis,
+            # pySemiAxis=ySemiAxis,
+            pxSemiAxis=0.1,
+            pySemiAxis=0.5,
             zMax=zHeight,
             pzTopCut=zTopCut,
             registry=reg,
