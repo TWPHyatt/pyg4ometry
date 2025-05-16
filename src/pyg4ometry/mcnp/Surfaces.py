@@ -1,5 +1,6 @@
 import numpy as _np
 import numpy as np
+import pyg4ometry.pycgal.Polygon_mesh_processing
 import sympy as _sp
 from .Cell import Cell
 from ..pycgal.Point_3 import Point_3_ECER as _Point_3_ECER
@@ -19,6 +20,7 @@ from ..geant4.solid import Orb
 from ..geant4.solid import EllipticalTube
 from ..geant4.solid import EllipticalCone
 from ..geant4.solid import Torus
+from ..transformation import matrix2axisangle
 
 inf = 1e2
 
@@ -102,16 +104,26 @@ class Surface:
         a = a / _np.linalg.norm(a)
         b = b / _np.linalg.norm(b)
 
+        print("a: ", a)
+        print("b: ", b)
+
         axisIn = _np.cross(a, b)  # rotation axis
         axisInNorm = _np.linalg.norm(axisIn)
+        print("cross: ", axisIn)
+        print("cross norm", axisInNorm)
 
         dotProduct = _np.dot(a, b)
         angleRad = _np.arccos(dotProduct)
         angleDeg = _np.degrees(angleRad)
+        print("dot: ", dotProduct)
+        print("rad: ", axisInNorm)
+        print("deg: ", angleDeg)
 
+        print("return...")
         if axisInNorm < 1e-9:  # a and b vectors are aligned or opposite
             if dotProduct > 0:  # no rotation needed
                 axisIn = _np.array([1, 0, 0])
+                print("Axis: ", axisIn, " Deg: ", angleDeg)
                 return axisIn, 0.0
             else:  # 180-degree rotation to axis
                 # a and b are opposite
@@ -122,6 +134,7 @@ class Surface:
                 perp[minIndex] = 1.0
                 axisIn = _np.cross(a, perp)
                 axisIn = axisIn / _np.linalg.norm(axisIn)
+                print("Axis: ", axisIn, " Deg: ", angleDeg)
                 return axisIn, 180.0
         else:
             axisIn = axisIn / axisInNorm
@@ -1874,6 +1887,40 @@ class REC(Surface):
         self.v2x = v2x
         self.v2y = v2y
         self.v2z = v2z
+
+        h = np.array([hx, hy, hz])
+        v1 = np.array([v1x, v1y, v1z])
+        v2 = np.array([v2x, v2y, v2z])
+
+        if (
+            self.v2y is None and self.v2z is None
+        ):  # with 10 entries, v2x becomes the minor axis radius
+            v2 = _np.cross(
+                h, v1
+            )  # direction of minor axis is determined from the cross product of h and v1 vectors
+            if np.allclose(v2, np.zeros(len(v2))):
+                msg = "The vectors h and v1 must be orthogonal"
+                raise ValueError(msg)
+            else:
+                v2 = v2 / _np.linalg.norm(v2) * self.v2x
+        else:
+            v2 = _np.array([self.v2x, self.v2y, self.v2z])
+
+            # extra checks for correct user REC definition
+            vectDothv1 = np.dot(h, v1)
+            vectDothv2 = np.dot(h, v2)
+            vectDotv1v2 = np.dot(v1, v2)
+
+            if abs(vectDothv1) > 1e-9:
+                msg = "The vectors v1 and h must be orthogonal"
+                raise TypeError(msg)
+            if abs(vectDothv2) > 1e-9:
+                msg = "The vectors v2 and h must be orthogonal"
+                raise TypeError(msg)
+            if abs(vectDotv1v2) > 1e-9:
+                msg = "The vectors v2 and v1 must be orthogonal"
+                raise TypeError(msg)
+
         super().__init__(reg, surfaceNumber)
 
     def __repr__(self):
@@ -1896,6 +1943,7 @@ class REC(Surface):
         v = _np.array([self.vx, self.vy, self.vz])
         h = _np.array([self.hx, self.hy, self.hz])
         v1 = _np.array([self.v1x, self.v1y, self.v1z])
+        v2 = _np.array([self.v2x, self.v2y, self.v2z])
 
         if (
             self.v2y is None and self.v2z is None
@@ -1932,8 +1980,12 @@ class REC(Surface):
 
         mesh = geom2.mesh()
 
-        axisIn, angleDeg = self.__rotationAboutAxis__(h, [0, 0, 1])
-        mesh.rotate(axisIn, angleDeg)
+        v1Norm = v1 / _np.linalg.norm(v1)
+        v2Norm = v2 / _np.linalg.norm(v2)
+        hNorm = h / _np.linalg.norm(h)
+        M = np.array([v1Norm, v2Norm, hNorm])
+        output = matrix2axisangle(M)
+        mesh.rotate(output[0], _np.rad2deg(output[1]))
         disp = [self.vx, self.vy, self.vz]
         mesh.translate(disp)
 
@@ -2013,6 +2065,7 @@ class TRC(Surface):
 
         disp = [0, 0, zTopCut]
         mesh.translate(disp)
+
         axisIn, angleDeg = self.__rotationAboutAxis__(h, [0, 0, 1])
         mesh.rotate(axisIn, angleDeg)
         disp = [self.vx, self.vy, self.vz]
