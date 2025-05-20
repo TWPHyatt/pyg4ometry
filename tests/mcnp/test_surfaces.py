@@ -8,131 +8,131 @@ import pyg4ometry.mcnp
 
 def test_Plane():
     reg = pyg4ometry.mcnp.Registry()
-    surface = pyg4ometry.mcnp.P(1.1, 1.2, 1.3, 1.4, reg=reg)
+    surface = pyg4ometry.mcnp.P(1, 1, 1, 5, reg=reg)
     print(surface)
 
 
 def test_PlaneX():
     reg = pyg4ometry.mcnp.Registry()
-    surface = pyg4ometry.mcnp.PX(1.1, reg=reg)
+    surface = pyg4ometry.mcnp.PX(5, reg=reg)
     print(surface)
 
 
 def test_PlaneY():
     reg = pyg4ometry.mcnp.Registry()
-    surface = pyg4ometry.mcnp.PY(1.2, reg=reg)
+    surface = pyg4ometry.mcnp.PY(5, reg=reg)
     print(surface)
 
 
 def test_PlaneZ():
     reg = pyg4ometry.mcnp.Registry()
-    surface = pyg4ometry.mcnp.PZ(1.3, reg=reg)
+    surface = pyg4ometry.mcnp.PZ(5, reg=reg)
     print(surface)
 
 
 def test_SphereO():
     reg = pyg4ometry.mcnp.Registry()
-    surface = pyg4ometry.mcnp.SO(1.5, reg=reg)
+    surface = pyg4ometry.mcnp.SO(5, reg=reg)
     print(surface)
 
 
 def test_Sphere():
     reg = pyg4ometry.mcnp.Registry()
-    surface = pyg4ometry.mcnp.S(1.1, 1.2, 1.3, 1.5, reg=reg)
+    surface = pyg4ometry.mcnp.S(1, 1, 1, 5, reg=reg)
     print(surface)
 
 
 def test_SphereX():
     reg = pyg4ometry.mcnp.Registry()
-    surface = pyg4ometry.mcnp.SX(1.1, 1.5, reg=reg)
+    surface = pyg4ometry.mcnp.SX(1, 5, reg=reg)
     print(surface)
 
 
 def test_SphereY():
     reg = pyg4ometry.mcnp.Registry()
-    surface = pyg4ometry.mcnp.SY(1.2, 1.5, reg=reg)
+    surface = pyg4ometry.mcnp.SY(1, 5, reg=reg)
     print(surface)
 
 
 def test_SphereZ():
     reg = pyg4ometry.mcnp.Registry()
-    surface = pyg4ometry.mcnp.SZ(1.3, 1.5, reg=reg)
+    surface = pyg4ometry.mcnp.SZ(1, 5, reg=reg)
     print(surface)
 
 
 def test_Cylinder_X():
     reg = pyg4ometry.mcnp.Registry()
-    surface = pyg4ometry.mcnp.C_X(1.2, 1.3, 1.5, reg=reg)
+    surface = pyg4ometry.mcnp.C_X(1, 1, 5, reg=reg)
     print(surface)
 
 
 def test_Cylinder_Y():
     reg = pyg4ometry.mcnp.Registry()
-    surface = pyg4ometry.mcnp.C_Y(1.1, 1.3, 1.5, reg=reg)
+    surface = pyg4ometry.mcnp.C_Y(1, 1, 5, reg=reg)
     print(surface)
 
 
 def test_Cylinder_Z():
     reg = pyg4ometry.mcnp.Registry()
-    surface = pyg4ometry.mcnp.C_Z(1.1, 1.2, 1.5, reg=reg)
+    surface = pyg4ometry.mcnp.C_Z(1, 1, 5, reg=reg)
     print(surface)
 
 
 def test_CylinderX():
     reg = pyg4ometry.mcnp.Registry()
-    surface = pyg4ometry.mcnp.CX(1.5, reg=reg)
+    surface = pyg4ometry.mcnp.CX(5, reg=reg)
     print(surface)
 
 
 def test_CylinderY():
     reg = pyg4ometry.mcnp.Registry()
-    surface = pyg4ometry.mcnp.CY(1.5, reg=reg)
+    surface = pyg4ometry.mcnp.CY(5, reg=reg)
     print(surface)
 
 
 def test_CylinderZ():
     reg = pyg4ometry.mcnp.Registry()
-    surface = pyg4ometry.mcnp.CZ(1.5, reg=reg)
+    surface = pyg4ometry.mcnp.CZ(5, reg=reg)
     print(surface)
 
 
 def test_Cone_X():
     reg = pyg4ometry.mcnp.Registry()
-    surface = pyg4ometry.mcnp.K_X(1.1, 1.2, 1.3, 25, -1, reg=reg)
+    surface = pyg4ometry.mcnp.K_X(1, 1, 1, 25, -1, reg=reg)
     print(surface)
 
 
 def test_Cone_Y():
     reg = pyg4ometry.mcnp.Registry()
-    surface = pyg4ometry.mcnp.K_Y(1.1, 1.2, 1.3, 25, -1, reg=reg)
+    surface = pyg4ometry.mcnp.K_Y(1, 1, 1, 25, -1, reg=reg)
     print(surface)
 
 
 def test_Cone_Z():
     reg = pyg4ometry.mcnp.Registry()
-    surface = pyg4ometry.mcnp.K_Z(1.1, 1.2, 1.3, 25, -1, reg=reg)
+    surface = pyg4ometry.mcnp.K_Z(1, 1, 1, 25, -1, reg=reg)
     print(surface)
 
 
 def test_ConeX():
     reg = pyg4ometry.mcnp.Registry()
-    surface = pyg4ometry.mcnp.KX(1.1, 25, -1, reg=reg)
+    surface = pyg4ometry.mcnp.KX(1, 25, -1, reg=reg)
     print(surface)
 
 
 def test_ConeY():
     reg = pyg4ometry.mcnp.Registry()
-    surface = pyg4ometry.mcnp.KY(1.2, 25, -1, reg=reg)
+    surface = pyg4ometry.mcnp.KY(1, 25, -1, reg=reg)
     print(surface)
 
 
 def test_ConeZ():
     reg = pyg4ometry.mcnp.Registry()
-    surface = pyg4ometry.mcnp.KY(1.3, 25, -1, reg=reg)
+    surface = pyg4ometry.mcnp.KY(1, 25, -1, reg=reg)
     print(surface)
 
 
-# ...
+# ... Torus SQ GQ
 
 # macrobody surfaces
 
