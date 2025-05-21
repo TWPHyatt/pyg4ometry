@@ -1,5 +1,4 @@
 import numpy as _np
-import numpy as np
 import pyg4ometry.pycgal.Polygon_mesh_processing
 import sympy as _sp
 from .Cell import Cell
@@ -1639,6 +1638,26 @@ class BOX(Surface):
         self.a3x = a3x
         self.a3y = a3y
         self.a3z = a3z
+
+        v = _np.array([vx, vy, vz])
+        a1 = _np.array([a1x, a1y, a1z])
+        a2 = _np.array([a2x, a2y, a2z])
+        a3 = _np.array([a3x, a3y, a3z])
+        #  checks for correct user BOX definition
+        a1_a2 = _np.dot(a1, a2)
+        a1_a3 = _np.dot(a1, a3)
+        a2_a3 = _np.dot(a2, a3)
+
+        if abs(a1_a2) > 1e-9:
+            msg = "The vectors a1 and a2 must be orthogonal"
+            raise TypeError(msg)
+        if abs(a1_a3) > 1e-9:
+            msg = "The vectors a1 and a3 must be orthogonal"
+            raise TypeError(msg)
+        if abs(a2_a3) > 1e-9:
+            msg = "The vectors a2 and a3 must be orthogonal"
+            raise TypeError(msg)
+
         super().__init__(reg, surfaceNumber)
 
     def __repr__(self):
@@ -1829,6 +1848,30 @@ class RCC(Surface):
 
     def __repr__(self):
         return f"RCC {self.vx} {self.vy} {self.vz} {self.hx} {self.hy} {self.hz} {self.r}"
+
+    def transform(self, rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], translation=[0, 0, 0]):
+        rotation = _np.array(rotation)
+        translation = _np.array(translation)
+        # rpp
+        v = _np.array([self.vx, self.vy, self.vz])
+        h = _np.array([self.hx, self.hy, self.hz])
+
+        if _np.array_equal(rotation, _np.eye(rotation.shape[0])):
+            # no rotation
+            if _np.array_equal(translation, _np.array([0, 0, 0])):
+                # no translation
+                return self
+            else:
+                v_p = v + translation
+                return RCC(*v, *h, self.r)  # rcc translation
+
+        else:  # rotation
+            # transformed rcc (prime)
+            # rotate height vector
+            h_p = rotation @ h
+            # rotate and translate the point at the centre of the base
+            v_p = rotation @ v + translation
+            return RCC(*v_p, *h_p, self.r)  # rcc translation
 
     def mesh(self):
         reg = g4Reg()
@@ -2027,9 +2070,9 @@ class REC(Surface):
         self.v2y = v2y
         self.v2z = v2z
 
-        h = np.array([hx, hy, hz])
-        v1 = np.array([v1x, v1y, v1z])
-        v2 = np.array([v2x, v2y, v2z])
+        h = _np.array([hx, hy, hz])
+        v1 = _np.array([v1x, v1y, v1z])
+        v2 = _np.array([v2x, v2y, v2z])
 
         if (
             self.v2y is None and self.v2z is None
@@ -2037,7 +2080,7 @@ class REC(Surface):
             v2 = _np.cross(
                 h, v1
             )  # direction of minor axis is determined from the cross product of h and v1 vectors
-            if np.allclose(v2, np.zeros(len(v2))):
+            if _np.allclose(v2, _np.zeros(len(v2))):
                 msg = "The vectors h and v1 must be orthogonal"
                 raise ValueError(msg)
             else:
@@ -2046,17 +2089,17 @@ class REC(Surface):
             v2 = _np.array([self.v2x, self.v2y, self.v2z])
 
             # extra checks for correct user REC definition
-            vectDothv1 = np.dot(h, v1)
-            vectDothv2 = np.dot(h, v2)
-            vectDotv1v2 = np.dot(v1, v2)
+            h_v1 = _np.dot(h, v1)
+            h_v2 = _np.dot(h, v2)
+            v1_v2 = _np.dot(v1, v2)
 
-            if abs(vectDothv1) > 1e-9:
+            if abs(h_v1) > 1e-9:
                 msg = "The vectors v1 and h must be orthogonal"
                 raise TypeError(msg)
-            if abs(vectDothv2) > 1e-9:
+            if abs(h_v2) > 1e-9:
                 msg = "The vectors v2 and h must be orthogonal"
                 raise TypeError(msg)
-            if abs(vectDotv1v2) > 1e-9:
+            if abs(v1_v2) > 1e-9:
                 msg = "The vectors v2 and v1 must be orthogonal"
                 raise TypeError(msg)
 
@@ -2090,7 +2133,7 @@ class REC(Surface):
             # direction of minor axis is determined from the cross product of h and v1 vectors
             print("v2y and v2z are None")
             v2 = _np.cross(h, v1)
-            if np.allclose(v2, np.zeros(len(v2))):
+            if _np.allclose(v2, _np.zeros(len(v2))):
                 msg = "The vectors h and v1 must be orthogonal"
                 raise ValueError(msg)
             else:
@@ -2122,7 +2165,7 @@ class REC(Surface):
         v1Norm = v1 / _np.linalg.norm(v1)
         v2Norm = v2 / _np.linalg.norm(v2)
         hNorm = h / _np.linalg.norm(h)
-        M = np.array([v1Norm, v2Norm, hNorm])
+        M = _np.array([v1Norm, v2Norm, hNorm])
         output = matrix2axisangle(M)
         mesh.rotate(output[0], _np.rad2deg(output[1]))
         disp = [self.vx, self.vy, self.vz]
