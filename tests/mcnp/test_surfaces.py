@@ -213,8 +213,20 @@ def test_KZ():
 
 
 def test_BOX():
+    """
+    box centered at the origin with 2cm sides parallel to major axis
+    """
     reg = pyg4ometry.mcnp.Registry()
     surface = pyg4ometry.mcnp.BOX(-1, -1, -1, 2, 0, 0, 0, 2, 0, 0, 0, 2, reg=reg)
+    print(surface)
+
+
+def test_BOX():
+    """
+    box centered at 4,5,6 with 3cm sides parallel to major axis
+    """
+    reg = pyg4ometry.mcnp.Registry()
+    surface = pyg4ometry.mcnp.BOX(4, 5, 6, 3, 0, 0, 0, 3, 0, 0, 0, 3, reg=reg)
     print(surface)
 
 
