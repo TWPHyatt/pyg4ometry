@@ -201,3 +201,23 @@ def test_BOX_transform1():
         translation=[0, 0, 0],
     )
     print(BOXp)
+
+
+def test_RECC_transform1():
+    """
+    right circular cylinder about the y-axis
+    with base plane at x,y,z = 0,-5,0, a height of 10, and radius of 4
+    rotated 45 degrees about the x-axis, and translated 6 in the +z direction
+    """
+    theta = _np.pi / 4
+    reg = pyg4ometry.mcnp.Registry()
+    RCC = pyg4ometry.mcnp.RCC(0, -5, 0, 0, 10, 0, 4)
+    RCCp = RCC.transform(
+        rotation=[
+            [1.0, 0.0, 0.0],
+            [0.0, _np.cos(theta), -_np.sin(theta)],
+            [0.0, _np.sin(theta), _np.cos(theta)],
+        ],
+        translation=[0, 0, 6],
+    )
+    print(RCCp)
