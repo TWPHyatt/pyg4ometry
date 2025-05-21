@@ -625,34 +625,24 @@ class PX(Surface):
         return f"PX {self.D}"
 
     def transform(self, rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], translation=[0, 0, 0]):
-        """
-        r = [[_np.sin(), _np.sin(), _np.sin()],[],[]]
-        """
         rotation = _np.array(rotation)
         translation = _np.array(translation)
         normal = _np.array([1, 0, 0])  # normal vector
 
         if _np.array_equal(rotation, _np.eye(rotation.shape[0])):
-            print("no rotation")
             # no rotation
             if _np.array_equal(translation, _np.array([0, 0, 0])):
                 # no translation
-                print("no translation")
                 return self
             else:
                 if _np.allclose(_np.cross(translation, normal), _np.array([0, 0, 0])):
                     # translation in the same direction as the normal (x)
-                    print("translation in x")
                     return PX(self.D + translation[0])  # x translation
                 else:
                     # still infinite PX if translated in y or z
-                    print("translation in y or z")
                     return PX(self.D + translation[0])  # x translation
 
-        else:
-            print("yes rotation")
-            # rotation
-
+        else:  # rotation
             # plane
             A, B, C = normal
             ABC = _np.array([A, B, C])
@@ -663,7 +653,6 @@ class PX(Surface):
             ABCp = rotation @ ABC  # ABCp is the normal prime
             ABCp = ABCp / _np.linalg.norm(ABCp)
             Dp = D + translation[0]
-            print(ABCp, Dp)
 
             return P(ABCp[0], ABCp[1], ABCp[2], Dp)
 
