@@ -1647,6 +1647,34 @@ class BOX(Surface):
             f" {self.a2x} {self.a2y} {self.a2z} {self.a3x} {self.a3y} {self.a3z}"
         )
 
+    def transform(self, rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], translation=[0, 0, 0]):
+        rotation = _np.array(rotation)
+        translation = _np.array(translation)
+        # box
+        v = _np.array([self.vx, self.vy, self.vz])
+        a1 = _np.array([self.a1x, self.a1y, self.a1z])
+        a2 = _np.array([self.a2x, self.a2y, self.a2z])
+        a3 = _np.array([self.a3x, self.a3y, self.a3z])
+
+        if _np.array_equal(rotation, _np.eye(rotation.shape[0])):
+            # no rotation
+            if _np.array_equal(translation, _np.array([0, 0, 0])):
+                # no translation
+                return self
+            else:
+                v_p = v + translation
+                return BOX(*v_p, *a1, *a2, *a3)  # box translation
+
+        else:  # rotation
+            # transformed box (prime)
+            # rotate each side vector
+            a1_p = rotation @ a1
+            a2_p = rotation @ a2
+            a3_p = rotation @ a3
+            # rotate and translate corner point
+            v_p = rotation @ v + translation
+            return BOX(*v_p, *a1_p, *a2_p, *a3_p)  # box translation
+
     def mesh(self):
         reg = g4Reg()
 
