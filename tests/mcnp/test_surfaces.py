@@ -6,129 +6,204 @@ import pyg4ometry.mcnp
 # surfaces
 
 
-def test_Plane():
+def test_P():
+    """
+    general plane with normal (1,1,1) and translation of 5
+    """
     reg = pyg4ometry.mcnp.Registry()
     surface = pyg4ometry.mcnp.P(1, 1, 1, 5, reg=reg)
     print(surface)
 
 
-def test_PlaneX():
+def test_PX():
+    """
+    x-plane (normal = 1,0,0) at 5
+    """
     reg = pyg4ometry.mcnp.Registry()
     surface = pyg4ometry.mcnp.PX(5, reg=reg)
     print(surface)
 
 
-def test_PlaneY():
+def test_PY():
+    """
+    y-plane (normal = 0,1,0) at 5
+    """
     reg = pyg4ometry.mcnp.Registry()
     surface = pyg4ometry.mcnp.PY(5, reg=reg)
     print(surface)
 
 
-def test_PlaneZ():
+def test_PZ():
+    """
+    z-plane (normal = 0,0,1) at 5
+    """
     reg = pyg4ometry.mcnp.Registry()
     surface = pyg4ometry.mcnp.PZ(5, reg=reg)
     print(surface)
 
 
-def test_SphereO():
+def test_SO():
+    """
+    sphere centred at the origin with a radius 5
+    """
     reg = pyg4ometry.mcnp.Registry()
     surface = pyg4ometry.mcnp.SO(5, reg=reg)
     print(surface)
 
 
-def test_Sphere():
+def test_S():
+    """
+    general sphere with center at 1,1,1 and a radius 5
+    """
     reg = pyg4ometry.mcnp.Registry()
     surface = pyg4ometry.mcnp.S(1, 1, 1, 5, reg=reg)
     print(surface)
 
 
-def test_SphereX():
+def test_SX():
+    """
+    sphere centered on x-axis at 1 with radius 5
+    """
     reg = pyg4ometry.mcnp.Registry()
     surface = pyg4ometry.mcnp.SX(1, 5, reg=reg)
     print(surface)
 
 
-def test_SphereY():
+def test_SY():
+    """
+    sphere centered on y-axis at 1 with radius 5
+    """
     reg = pyg4ometry.mcnp.Registry()
     surface = pyg4ometry.mcnp.SY(1, 5, reg=reg)
     print(surface)
 
 
-def test_SphereZ():
+def test_SZ():
+    """
+    sphere centered on z-axis at 1 with radius 5
+    """
     reg = pyg4ometry.mcnp.Registry()
     surface = pyg4ometry.mcnp.SZ(1, 5, reg=reg)
     print(surface)
 
 
-def test_Cylinder_X():
+def test_C_X():
+    """
+    cylinder parallel to x-axis at y,z = 1,1 and radius 5
+    """
     reg = pyg4ometry.mcnp.Registry()
     surface = pyg4ometry.mcnp.C_X(1, 1, 5, reg=reg)
     print(surface)
 
 
-def test_Cylinder_Y():
+def test_C_Y():
+    """
+    cylinder parallel to y-axis at x,z = 1,1 and radius 5
+    """
     reg = pyg4ometry.mcnp.Registry()
     surface = pyg4ometry.mcnp.C_Y(1, 1, 5, reg=reg)
     print(surface)
 
 
-def test_Cylinder_Z():
+def test_C_Z():
+    """
+    cylinder parallel to z-axis at x,y = 1,1 and radius 5
+    """
     reg = pyg4ometry.mcnp.Registry()
     surface = pyg4ometry.mcnp.C_Z(1, 1, 5, reg=reg)
     print(surface)
 
 
-def test_CylinderX():
+def test_CX():
+    """
+    cylinder on x-axis with radius 5
+    """
     reg = pyg4ometry.mcnp.Registry()
     surface = pyg4ometry.mcnp.CX(5, reg=reg)
     print(surface)
 
 
-def test_CylinderY():
+def test_CY():
+    """
+    cylinder on y-axis with radius 5
+    """
     reg = pyg4ometry.mcnp.Registry()
     surface = pyg4ometry.mcnp.CY(5, reg=reg)
     print(surface)
 
 
-def test_CylinderZ():
+def test_CZ():
+    """
+    cylinder on z-axis with radius 5
+    """
     reg = pyg4ometry.mcnp.Registry()
     surface = pyg4ometry.mcnp.CZ(5, reg=reg)
     print(surface)
 
 
-def test_Cone_X():
+def test_K_X():
+    """
+    cone parallel to x-axis at 1,1,1
+    with slope t=5 where t is the tangent of the cone's half-angle: t=tan(θ)
+    the negative sheet chosen
+    """
     reg = pyg4ometry.mcnp.Registry()
     surface = pyg4ometry.mcnp.K_X(1, 1, 1, 25, -1, reg=reg)
     print(surface)
 
 
-def test_Cone_Y():
+def test_K_Y():
+    """
+    cone parallel to y-axis at 2,2,2
+    with slope t=6 where t is the tangent of the cone's half-angle: t=tan(θ)
+    the positive sheet chosen
+    """
     reg = pyg4ometry.mcnp.Registry()
-    surface = pyg4ometry.mcnp.K_Y(1, 1, 1, 25, -1, reg=reg)
+    surface = pyg4ometry.mcnp.K_Y(2, 2, 2, 36, +1, reg=reg)
     print(surface)
 
 
-def test_Cone_Z():
+def test_K_Z():
+    """
+    cone parallel to z-axis at 1,2,1
+    with slope t=7 where t is the tangent of the cone's half-angle: t=tan(θ)
+    the negative sheet chosen
+    """
     reg = pyg4ometry.mcnp.Registry()
-    surface = pyg4ometry.mcnp.K_Z(1, 1, 1, 25, -1, reg=reg)
+    surface = pyg4ometry.mcnp.K_Z(1, 2, 1, 49, -1, reg=reg)
     print(surface)
 
 
-def test_ConeX():
+def test_KX():
+    """
+    cone on the x-axis with x=1
+    with slope t=5 where t is the tangent of the cone's half-angle: t=tan(θ)
+    the negative sheet chosen
+    """
     reg = pyg4ometry.mcnp.Registry()
     surface = pyg4ometry.mcnp.KX(1, 25, -1, reg=reg)
     print(surface)
 
 
-def test_ConeY():
+def test_KY():
+    """
+    cone on the y-axis with y=2
+    with slope t=6 where t is the tangent of the cone's half-angle: t=tan(θ)
+    the positive sheet chosen
+    """
     reg = pyg4ometry.mcnp.Registry()
-    surface = pyg4ometry.mcnp.KY(1, 25, -1, reg=reg)
+    surface = pyg4ometry.mcnp.KY(2, 36, +1, reg=reg)
     print(surface)
 
 
-def test_ConeZ():
+def test_KZ():
+    """
+    cone on the z-axis with z=3
+    with slope t=7 where t is the tangent of the cone's half-angle: t=tan(θ)
+    the negative sheet chosen
+    """
     reg = pyg4ometry.mcnp.Registry()
-    surface = pyg4ometry.mcnp.KY(1, 25, -1, reg=reg)
+    surface = pyg4ometry.mcnp.KZ(3, 49, -1, reg=reg)
     print(surface)
 
 
