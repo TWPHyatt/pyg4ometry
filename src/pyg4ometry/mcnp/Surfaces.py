@@ -21,7 +21,7 @@ from ..geant4.solid import EllipticalCone
 from ..geant4.solid import Torus
 from ..transformation import matrix2axisangle
 
-inf = 1e2
+inf = 1e6
 
 
 class Intersection:
@@ -99,7 +99,7 @@ class Surface:
     def toOutputString(self):
         return str(self.surfaceNumber)
 
-    def __rotationAboutAxis__(self, a, b):
+    def _rotationAboutAxis(self, a, b):
         a = a / _np.linalg.norm(a)
         b = b / _np.linalg.norm(b)
 
@@ -660,7 +660,7 @@ class PX(Surface):
         rotation = _np.array(rotation)
         translation = _np.array(translation)
         # plane
-        normal = _np.array([self.A, self.B, self.C])  # normal vector
+        normal = _np.array([1, 0, 0])  # normal vector
         D = self.D
 
         if _np.array_equal(rotation, _np.eye(rotation.shape[0])):
@@ -711,7 +711,7 @@ class PY(Surface):
         rotation = _np.array(rotation)
         translation = _np.array(translation)
         # plane
-        normal = _np.array([self.A, self.B, self.C])  # normal vector
+        normal = _np.array([0, 1, 0])  # normal vector
         D = self.D
 
         if _np.array_equal(rotation, _np.eye(rotation.shape[0])):
@@ -762,7 +762,7 @@ class PZ(Surface):
         rotation = _np.array(rotation)
         translation = _np.array(translation)
         # plane
-        normal = _np.array([self.A, self.B, self.C])  # normal vector
+        normal = _np.array([0, 0, 1])  # normal vector
         D = self.D
 
         if _np.array_equal(rotation, _np.eye(rotation.shape[0])):
@@ -1703,6 +1703,7 @@ class BOX(Surface):
             C=self.a1z,
             D=(self.a1x * self.vx) + (self.a1y * self.vy) + (self.a1z * self.vz),
         )
+        print("d1=", (self.a1x * self.vx) + (self.a1y * self.vy) + (self.a1z * self.vz))
         p2 = P(
             A=self.a1x,
             B=self.a1y,
@@ -1711,11 +1712,18 @@ class BOX(Surface):
             + self.a1y * (self.vy + self.a1y)
             + self.a1z * (self.vz + self.a1z),
         )
+        print("d2=", (self.a2x * self.vx) + (self.a2y * self.vy) + (self.a2z * self.vz))
         p3 = P(
             A=self.a2x,
             B=self.a2y,
             C=self.a2z,
             D=(self.a2x * self.vx) + (self.a2y * self.vy) + (self.a2z * self.vz),
+        )
+        print(
+            "d3=",
+            self.a2x * (self.vx + self.a2x)
+            + self.a2y * (self.vy + self.a2y)
+            + self.a2z * (self.vz + self.a2z),
         )
         p4 = P(
             A=self.a2x,
@@ -1725,17 +1733,25 @@ class BOX(Surface):
             + self.a2y * (self.vy + self.a2y)
             + self.a2z * (self.vz + self.a2z),
         )
+        print("d4=", (self.a3x * self.vx) + (self.a3y * self.vy) + (self.a3z * self.vz))
         p5 = P(
             A=self.a3x,
             B=self.a3y,
             C=self.a3z,
             D=(self.a3x * self.vx) + (self.a3y * self.vy) + (self.a3z * self.vz),
         )
+        print("d5=", (self.a3x * self.vx) + (self.a3y * self.vy) + (self.a3z * self.vz))
         p6 = P(
             A=self.a3x,
             B=self.a3y,
             C=self.a3z,
             D=self.a3x * (self.vx + self.a3x)
+            + self.a3y * (self.vy + self.a3y)
+            + self.a3z * (self.vz + self.a3z),
+        )
+        print(
+            "d6=",
+            self.a3x * (self.vx + self.a3x)
             + self.a3y * (self.vy + self.a3y)
             + self.a3z * (self.vz + self.a3z),
         )
@@ -1894,7 +1910,7 @@ class RCC(Surface):
 
         mesh = geom2.mesh()
 
-        axisIn, angleDeg = self.__rotationAboutAxis__(h, [0, 0, 1])
+        axisIn, angleDeg = self._rotationAboutAxis(h, [0, 0, 1])
         mesh.rotate(axisIn, angleDeg)
         disp = [self.vx, self.vy, self.vz]
         mesh.translate(disp)
@@ -2022,7 +2038,7 @@ class RHP_HEX(Surface):
 
         mesh = geom7.mesh()
 
-        axisIn, angleDeg = self.__rotationAboutAxis__(h, [0, 0, 1])
+        axisIn, angleDeg = self._rotationAboutAxis(h, [0, 0, 1])
         mesh.rotate(axisIn, angleDeg)
         disp = v
         mesh.translate(disp)
@@ -2248,7 +2264,7 @@ class TRC(Surface):
         disp = [0, 0, zTopCut]
         mesh.translate(disp)
 
-        axisIn, angleDeg = self.__rotationAboutAxis__(h, [0, 0, 1])
+        axisIn, angleDeg = self._rotationAboutAxis(h, [0, 0, 1])
         mesh.rotate(axisIn, angleDeg)
         disp = [self.vx, self.vy, self.vz]
         mesh.translate(disp)
