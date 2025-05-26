@@ -15,12 +15,22 @@ class Registry:
         self.materialDict = {}
         self.cellDict = {}
 
-    def addSurface(self, surface):
-        if surface.surfaceNumber in self.surfaceDict:
-            surface.surfaceNumber = self.getNewSurfaceNumber()
-        if not surface.surfaceNumber:
-            surface.surfaceNumber = self.getNewSurfaceNumber()
-        self.surfaceDict[surface.surfaceNumber] = surface
+    def addSurface(self, surface, replace=False):
+        if replace:
+            if surface.surfaceNumber in self.surfaceDict:
+                msg = f"Could not find surface {surface.surfaceNumber} in registry."
+                raise TypeError(msg)
+            else:
+                self.surfaceDict[surface.surfaceNumber] = surface
+        elif not replace:
+            if surface.surfaceNumber in self.surfaceDict:
+                surface.surfaceNumber = self.getNewSurfaceNumber()
+            if not surface.surfaceNumber:
+                surface.surfaceNumber = self.getNewSurfaceNumber()
+            self.surfaceDict[surface.surfaceNumber] = surface
+        else:
+            msg = "Replace can only be True or False when adding a surface to registry."
+            raise TypeError(msg)
 
         if type(surface) is _BOX:
             self.addSubsurface(surface, 6)
@@ -99,3 +109,21 @@ class Registry:
         if len(self.transformationDict.keys()) == 0:
             return 1
         return max(self.transformationDict.keys()) + 1
+
+    def transformSurfaces(self, surfaces=[], rotation=None, translation=None, option=""):
+        """
+        if option == "replace":
+            loops over the surfaces
+            copies all the surfaces in the list of surfaces
+            does the transforms
+            replaces the surfaces in the registry with the transformed ones >>> with self.addSurface(..., replace="True")
+        elif option == "new":
+            loops over the surfaces
+            copies all the surfaces in the list of surfaces
+            does the transforms
+            adds the transformed surfaces to the registry >>>  with self.addSurface(..., replace="False")
+
+        else:
+            msg = "Block type can only be `replace` of `new`"
+                raise TypeError(msg)
+        """
