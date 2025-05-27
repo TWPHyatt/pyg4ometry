@@ -64,12 +64,22 @@ class Registry:
         for i in range(1, numToAdd + 1, 1):
             self.surfaceDict[str(surface.surfaceNumber) + "." + str(i)] = surface
 
-    def addCell(self, cell):
-        if cell.cellNumber in self.cellDict:
-            cell.cellNumber = self.getNewCellNumber()
-        if not cell.cellNumber:
-            cell.cellNumber = self.getNewCellNumber()
-        self.cellDict[cell.cellNumber] = cell
+    def addCell(self, cell, replace=False):
+        if replace:
+            if cell.cellNumber in self.surfaceDict:
+                msg = f"Could not find cell {cell.cellNumber} in registry."
+                raise TypeError(msg)
+            else:
+                self.surfaceDict[cell.cellNumber] = cell
+        elif not replace:
+            if cell.cellNumber in self.surfaceDict:
+                cell.cellNumber = self.getNewCellNumber()
+            if not cell.cellNumber:
+                cell.cellNumber = self.getNewCellNumber()
+            self.surfaceDict[cell.cellNumber] = cell
+        else:
+            msg = "Replace can only be True or False when adding a cell to registry."
+            raise TypeError(msg)
 
     def addTransformation(self, transformation):
         if transformation.transformationNumber in self.transformationDict:
