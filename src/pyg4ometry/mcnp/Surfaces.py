@@ -103,26 +103,26 @@ class Surface:
         a = a / _np.linalg.norm(a)
         b = b / _np.linalg.norm(b)
 
-        print("a: ", a)
-        print("b: ", b)
+        # print("a: ", a)
+        # print("b: ", b)
 
         axisIn = _np.cross(a, b)  # rotation axis
         axisInNorm = _np.linalg.norm(axisIn)
-        print("cross: ", axisIn)
-        print("cross norm", axisInNorm)
+        # print("cross: ", axisIn)
+        # print("cross norm", axisInNorm)
 
         dotProduct = _np.dot(a, b)
         angleRad = _np.arccos(dotProduct)
         angleDeg = _np.degrees(angleRad)
-        print("dot: ", dotProduct)
-        print("rad: ", axisInNorm)
-        print("deg: ", angleDeg)
+        # print("dot: ", dotProduct)
+        # print("rad: ", axisInNorm)
+        # print("deg: ", angleDeg)
 
-        print("return...")
+        # print("return...")
         if axisInNorm < 1e-9:  # a and b vectors are aligned or opposite
             if dotProduct > 0:  # no rotation needed
                 axisIn = _np.array([1, 0, 0])
-                print("Axis: ", axisIn, " Deg: ", angleDeg)
+                # print("Axis: ", axisIn, " Deg: ", angleDeg)
                 return axisIn, 0.0
             else:  # 180-degree rotation to axis
                 # a and b are opposite
@@ -133,12 +133,12 @@ class Surface:
                 perp[minIndex] = 1.0
                 axisIn = _np.cross(a, perp)
                 axisIn = axisIn / _np.linalg.norm(axisIn)
-                print("Axis: ", axisIn, " Deg: ", angleDeg)
+                # print("Axis: ", axisIn, " Deg: ", angleDeg)
                 return axisIn, 180.0
         else:
             axisIn = axisIn / axisInNorm
 
-        print("Axis: ", axisIn, " Deg: ", angleDeg)
+        # print("Axis: ", axisIn, " Deg: ", angleDeg)
         return axisIn, angleDeg
 
 
@@ -722,15 +722,15 @@ class PY(Surface):
             else:
                 if _np.allclose(_np.cross(translation, normal), _np.array([0, 0, 0])):
                     # translation in the same direction as the normal (y)
-                    return PY(self.D + translation[0])  # y translation
+                    return PY(self.D + translation[1])  # y translation
                 else:
                     # still infinite PX if translated in y or z
-                    return PY(self.D + translation[0])  # y translation (if any)
+                    return PY(self.D + translation[1])  # y translation (if any)
         else:  # rotation
             # transformed plane (prime)
             normal_p = rotation @ normal  # ABCp is the normal prime
             unitNormal_p = normal_p / _np.linalg.norm(normal_p)
-            D_p = D + translation[0]
+            D_p = D + translation[1]
             return P(unitNormal_p[0], unitNormal_p[1], unitNormal_p[2], D_p)
 
     def mesh(self):
@@ -773,15 +773,15 @@ class PZ(Surface):
             else:
                 if _np.allclose(_np.cross(translation, normal), _np.array([0, 0, 0])):
                     # translation in the same direction as the normal (z)
-                    return PZ(self.D + translation[0])  # z translation
+                    return PZ(self.D + translation[2])  # z translation
                 else:
                     # still infinite PX if translated in y or z
-                    return PZ(self.D + translation[0])  # z translation (if any)
+                    return PZ(self.D + translation[2])  # z translation (if any)
         else:  # rotation
             # transformed plane (prime)
             normal_p = rotation @ normal  # ABCp is the normal prime
             unitNormal_p = normal_p / _np.linalg.norm(normal_p)
-            D_p = D + translation[0]
+            D_p = D + translation[2]
             return P(unitNormal_p[0], unitNormal_p[1], unitNormal_p[2], D_p)
 
     def mesh(self):
@@ -1866,6 +1866,7 @@ class RCC(Surface):
         return f"RCC {self.vx} {self.vy} {self.vz} {self.hx} {self.hy} {self.hz} {self.r}"
 
     def transform(self, rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], translation=[0, 0, 0]):
+        print(f"transforming RCC")
         rotation = _np.array(rotation)
         translation = _np.array(translation)
         # rpp
@@ -1879,7 +1880,7 @@ class RCC(Surface):
                 return self
             else:
                 v_p = v + translation
-                return RCC(*v, *h, self.r)  # rcc translation
+                return RCC(*v_p, *h, self.r)  # rcc translation
 
         else:  # rotation
             # transformed rcc (prime)
