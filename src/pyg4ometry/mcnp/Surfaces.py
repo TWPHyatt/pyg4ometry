@@ -662,10 +662,10 @@ class PX(Surface):
         # plane
         normal = _np.array([1, 0, 0])  # normal vector
 
-        if _np.array_equal(rotation, _np.eye(rotation.shape[0])):
+        if _np.allclose(rotation, _np.eye(rotation.shape[0])):
             # no rotation
             print(f"N rotation")
-            if _np.array_equal(translation, _np.array([0, 0, 0])):
+            if _np.allclose(translation, _np.array([0, 0, 0])):
                 print(f"N translation")
                 # no translation
                 return self
@@ -1942,21 +1942,31 @@ class RCC(Surface):
         v = _np.array([self.vx, self.vy, self.vz])
         h = _np.array([self.hx, self.hy, self.hz])
 
-        if _np.array_equal(rotation, _np.eye(rotation.shape[0])):
+        print(f"h: {h}")
+        print(f"v: {v}")
+
+        if _np.allclose(rotation, _np.eye(3)):
             # no rotation
-            if _np.array_equal(translation, _np.array([0, 0, 0])):
+            print(f"N rotation")
+            if _np.allclose(translation, [0, 0, 0]):
+                print(f"N translation")
                 # no translation
                 return self
             else:
+                print(f"Y translation")
                 v_p = v + translation
                 return RCC(*v_p, *h, self.r)  # rcc translation
 
         else:  # rotation
+            print(f"Y rotation")
+            print(f"Y translation")
             # transformed rcc (prime)
-            # rotate height vector
-            h_p = rotation @ h
             # rotate and translate the point at the centre of the base
             v_p = rotation @ v + translation
+            # rotate height vector
+            h_p = rotation @ h
+            print(f"h_p: {h_p}")
+            print(f"v_p: {v_p}")
             return RCC(*v_p, *h_p, self.r)  # rcc translation
 
     def mesh(self):
