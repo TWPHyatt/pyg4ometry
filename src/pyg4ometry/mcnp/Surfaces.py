@@ -661,26 +661,49 @@ class PX(Surface):
         translation = _np.array(translation)
         # plane
         normal = _np.array([1, 0, 0])  # normal vector
-        D = self.D
 
         if _np.array_equal(rotation, _np.eye(rotation.shape[0])):
             # no rotation
+            print(f"N rotation")
             if _np.array_equal(translation, _np.array([0, 0, 0])):
+                print(f"N translation")
                 # no translation
                 return self
             else:
+                print(f"Y translation")
+                # translation
                 if _np.allclose(_np.cross(translation, normal), _np.array([0, 0, 0])):
                     # translation in the same direction as the normal (x)
                     return PX(self.D + translation[0])  # x translation
                 else:
                     # still infinite PX if translated in y or z
                     return PX(self.D + translation[0])  # x translation (if any)
-        else:  # rotation
-            # transformed plane (prime)
+        else:
+            # rotation
+            print(f"Y rotation")
             normal_p = rotation @ normal  # ABCp is the normal prime
             unitNormal_p = normal_p / _np.linalg.norm(normal_p)
-            D_p = D + translation[0]
-            return P(unitNormal_p[0], unitNormal_p[1], unitNormal_p[2], D_p)
+            if _np.array_equal(translation, _np.array([0, 0, 0])):
+                # no translation
+                print(f"N translation")
+                return P(*unitNormal_p, self.D)
+            else:
+                print(f"Y translation")
+                # translation
+                if _np.allclose(_np.cross(translation, normal), _np.array([0, 0, 0])):
+                    print(f" > translate in x")
+                    # translation in the same direction as the normal (x)
+                    D_p = self.D + translation[0]
+                    print(f" > {unitNormal_p} & {D_p}")
+                    return P(*unitNormal_p, D_p)  # x translation
+                else:
+                    print(f" > translate in {unitNormal_p}")
+                    # translation in the direction of
+                    p0 = _np.array([self.D, 0, 0])  # point on original PX
+                    p0_p = rotation @ p0 + translation
+                    D_p = unitNormal_p @ p0_p
+                    print(f" > {unitNormal_p} & {D_p}")
+                    return P(*unitNormal_p, D_p)  # translation
 
     def mesh(self):
         solid = P(
@@ -712,26 +735,49 @@ class PY(Surface):
         translation = _np.array(translation)
         # plane
         normal = _np.array([0, 1, 0])  # normal vector
-        D = self.D
 
         if _np.array_equal(rotation, _np.eye(rotation.shape[0])):
             # no rotation
+            print(f"N rotation")
             if _np.array_equal(translation, _np.array([0, 0, 0])):
+                print(f"N translation")
                 # no translation
                 return self
             else:
+                print(f"Y translation")
+                # translation
                 if _np.allclose(_np.cross(translation, normal), _np.array([0, 0, 0])):
                     # translation in the same direction as the normal (y)
                     return PY(self.D + translation[1])  # y translation
                 else:
-                    # still infinite PX if translated in y or z
+                    # still infinite PY if translated in x or z
                     return PY(self.D + translation[1])  # y translation (if any)
-        else:  # rotation
-            # transformed plane (prime)
+        else:
+            # rotation
+            print(f"Y rotation")
             normal_p = rotation @ normal  # ABCp is the normal prime
             unitNormal_p = normal_p / _np.linalg.norm(normal_p)
-            D_p = D + translation[1]
-            return P(unitNormal_p[0], unitNormal_p[1], unitNormal_p[2], D_p)
+            if _np.array_equal(translation, _np.array([0, 0, 0])):
+                # no translation
+                print(f"N translation")
+                return P(*unitNormal_p, self.D)
+            else:
+                print(f"Y translation")
+                # translation
+                if _np.allclose(_np.cross(translation, normal), _np.array([0, 0, 0])):
+                    print(f" > translate in x")
+                    # translation in the same direction as the normal (y)
+                    D_p = self.D + translation[1]
+                    print(f" > {unitNormal_p} & {D_p}")
+                    return P(*unitNormal_p, D_p)  # y translation
+                else:
+                    print(f" > translate in {unitNormal_p}")
+                    # translation in the direction of
+                    p0 = _np.array([0, self.D, 0])  # point on original PY
+                    p0_p = rotation @ p0 + translation
+                    D_p = unitNormal_p @ p0_p
+                    print(f" > {unitNormal_p} & {D_p}")
+                    return P(*unitNormal_p, D_p)  # translation
 
     def mesh(self):
         solid = P(
@@ -767,22 +813,46 @@ class PZ(Surface):
 
         if _np.array_equal(rotation, _np.eye(rotation.shape[0])):
             # no rotation
+            print(f"N rotation")
             if _np.array_equal(translation, _np.array([0, 0, 0])):
+                print(f"N translation")
                 # no translation
                 return self
             else:
+                print(f"Y translation")
+                # translation
                 if _np.allclose(_np.cross(translation, normal), _np.array([0, 0, 0])):
                     # translation in the same direction as the normal (z)
                     return PZ(self.D + translation[2])  # z translation
                 else:
-                    # still infinite PX if translated in y or z
+                    # still infinite PY if translated in x or z
                     return PZ(self.D + translation[2])  # z translation (if any)
-        else:  # rotation
-            # transformed plane (prime)
+        else:
+            # rotation
+            print(f"Y rotation")
             normal_p = rotation @ normal  # ABCp is the normal prime
             unitNormal_p = normal_p / _np.linalg.norm(normal_p)
-            D_p = D + translation[2]
-            return P(unitNormal_p[0], unitNormal_p[1], unitNormal_p[2], D_p)
+            if _np.array_equal(translation, _np.array([0, 0, 0])):
+                # no translation
+                print(f"N translation")
+                return P(*unitNormal_p, self.D)
+            else:
+                print(f"Y translation")
+                # translation
+                if _np.allclose(_np.cross(translation, normal), _np.array([0, 0, 0])):
+                    print(f" > translate in x")
+                    # translation in the same direction as the normal (z)
+                    D_p = self.D + translation[2]
+                    print(f" > {unitNormal_p} & {D_p}")
+                    return P(*unitNormal_p, D_p)  # z translation
+                else:
+                    print(f" > translate in {unitNormal_p}")
+                    # translation in the direction of
+                    p0 = _np.array([0, 0, self.D])  # point on original PZ
+                    p0_p = rotation @ p0 + translation
+                    D_p = unitNormal_p @ p0_p
+                    print(f" > {unitNormal_p} & {D_p}")
+                    return P(*unitNormal_p, D_p)  # translation
 
     def mesh(self):
         solid = P(
@@ -1866,7 +1936,6 @@ class RCC(Surface):
         return f"RCC {self.vx} {self.vy} {self.vz} {self.hx} {self.hy} {self.hz} {self.r}"
 
     def transform(self, rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], translation=[0, 0, 0]):
-        print(f"transforming RCC")
         rotation = _np.array(rotation)
         translation = _np.array(translation)
         # rpp
