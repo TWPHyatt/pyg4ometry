@@ -66,17 +66,17 @@ class Registry:
 
     def addCell(self, cell, replace=False):
         if replace:
-            if cell.cellNumber in self.surfaceDict:
+            if cell.cellNumber in self.cellDict:
                 msg = f"Could not find cell {cell.cellNumber} in registry."
                 raise TypeError(msg)
             else:
-                self.surfaceDict[cell.cellNumber] = cell
+                self.cellDict[cell.cellNumber] = cell
         elif not replace:
-            if cell.cellNumber in self.surfaceDict:
+            if cell.cellNumber in self.cellDict:
                 cell.cellNumber = self.getNewCellNumber()
             if not cell.cellNumber:
                 cell.cellNumber = self.getNewCellNumber()
-            self.surfaceDict[cell.cellNumber] = cell
+            self.cellDict[cell.cellNumber] = cell
         else:
             msg = "Replace can only be True or False when adding a cell to registry."
             raise TypeError(msg)
