@@ -62,7 +62,7 @@ class Registry:
 
     def addSubsurface(self, surface, numToAdd):
         for i in range(1, numToAdd + 1, 1):
-            self.surfaceDict[str(surface.surfaceNumber) + "." + str(i)] = surface
+            self.surfaceDict[float(str(surface.surfaceNumber) + "." + str(i))] = surface
 
     def addCell(self, cell, replace=False):
         if replace:
@@ -103,7 +103,7 @@ class Registry:
     def getNewSurfaceNumber(self):
         if len(self.surfaceDict.keys()) == 0:
             return 1
-        return max(self.surfaceDict.keys()) + 1
+        return int(max(self.surfaceDict.keys())) + 1
 
     def getNewCellNumber(self):
         if len(self.cellDict.keys()) == 0:
