@@ -46,7 +46,7 @@ class Intersection:
             return self.left.toOutputString() + " " + self.right.toOutputString()
 
     def mesh(self):
-        print(f"intersection mesh {type(self.left)} {type(self.right)}")
+        # print(f"intersection mesh {type(self.left)} {type(self.right)}")
         return self.left.mesh().intersect(self.right.mesh())
 
 
@@ -64,7 +64,7 @@ class Union:
         return self.left.toOutputString() + ":" + self.right.toOutputString()
 
     def mesh(self):
-        print(f"union mesh {type(self.left)} {type(self.right)}")
+        # print(f"union mesh {type(self.left)} {type(self.right)}")
         return self.left.mesh().union(self.right.mesh())
 
 
@@ -83,10 +83,10 @@ class Complement:
         elif isinstance(self.item, Cell):
             return "#" + str(self.item.cellNumber)
         else:
-            return "#" + self.item.toOutputString()
+            return "#(" + self.item.toOutputString() + ")"
 
     def mesh(self):
-        print(f"complement mesh {type(self.item)}")
+        # print(f"complement mesh {type(self.item)}")
         mesh = self.item.mesh()
         bigBox = mesh.cube(center=[0, 0, 0], radius=[inf, inf, inf])  # big box (universe)
         return bigBox.subtract(mesh)
@@ -603,7 +603,7 @@ class P(Surface):
             return P(normal_p[0], normal_p[1], normal_p[2], Dp)
 
     def mesh(self):
-        print(f"surface plane mesh")
+        # print(f"surface plane mesh")
         n1 = _Nef_polyhedron_3_ECER(
             _Plane_3_ECER(_Point_3_ECER(0, 0, inf), _Vector_3_ECER(0, 0, 1))
         )
@@ -1860,18 +1860,18 @@ class RCC(Surface):
         v = _np.array([self.vx, self.vy, self.vz])
         h = _np.array([self.hx, self.hy, self.hz])
 
-        print(f"h: {h}")
-        print(f"v: {v}")
+        # print(f"h: {h}")
+        # print(f"v: {v}")
 
         if _np.allclose(rotation, _np.eye(3)):
             # no rotation
-            print(f"N rotation")
+            # print(f"N rotation")
             if _np.allclose(translation, [0, 0, 0]):
-                print(f"N translation")
+                # print(f"N translation")
                 # no translation
                 return self
             else:
-                print(f"Y translation")
+                # print(f"Y translation")
                 v_p = v + translation
                 return RCC(*v_p, *h, self.r)  # rcc translation
 
