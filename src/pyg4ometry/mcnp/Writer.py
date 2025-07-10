@@ -1,74 +1,143 @@
 class Writer:
     """
-    Class to write MCNP input files from a fluka registry object.
+    Class to write MCNP input files from an MCNP registry object
 
     >> f = Writer()
     >> f.addGeometry(reg=reg)
     >> f.write("i-example.txt")
     """
 
-    def __init__(self):
-        pass
+    def __init__(self, columnMax=128):
+        self.title = "TITLE"
+        self.col = columnMax
+        if 80 < self.col < 128:
+            msg = "For MCNP6.2 the column limit was increased to 128 from 80 in previous versions"
+            print(msg)
+        if self.col > 128:
+            msg = "For MCNP6.2 the column limit is 128"
+            raise TypeError(msg)
 
-    def addGeometry(self, registry):
+    def addGeometry(self, reg):
         """
-        Set the mcnp registry for this writer instance.
+        Set the mcnp registry for this writer instance
         """
-        self.registry = registry
+        self.reg = reg
 
     def write(self, fileName):
         """
-        Write the output to a given filename. e.g. "model.inp".
+        Write the output to a given filename. e.g. "model.inp"
         """
 
         f = open(fileName, "w")
 
-        f.write("TITLE\n")
+        f.write(f"{self.title}\n")
 
-        # loop over cell dictionary
         f.write("c ********** CELLS **********\n")
-        for cell in self.registry.cellDict:
-            f.write(f"")
-            f.write(f"{self.registry.cellDict[cell].toOutputString()}")
-            f.write(f" ")
-            f.write(
-                f"{self.registry.materialDict[self.registry.cellDict[cell].materialNumber][self.registry.cellDict[cell].materialIndex].toOutputString()}"
-            )
-            f.write(f" ")
-            f.write(f"{self.registry.cellDict[cell].geometry.toOutputString()}")
-            f.write(f" ")
-            for imp in self.registry.cellDict[cell].importance:
-                f.write(f"{imp.toOutputString()} ")
-            # todo maybe check if multiple importances then can only be of form 1
-            # todo form 2 is specified in the data card only so can't be added to a cell...
-            f.write("\n")
 
-        # loop over surface dictionary
+        for cell in self.reg.cellDict:
+            parts = []
+
+            # cell numbers
+            parts.append(self.reg.cellDict[cell].toOutputString())
+
+            # material output
+            materialNumber = self.reg.cellDict[cell].materialNumber
+            materialIndex = self.reg.cellDict[cell].materialIndex
+            parts.append(self.reg.materialDict[materialNumber][materialIndex].toOutputString())
+
+            # geometry output
+            parts.append(self.reg.cellDict[cell].geometry.toOutputString())
+
+            # keywords output
+            for imp in self.reg.cellDict[cell].importance:
+                parts.append(imp.toOutputString())
+                # todo maybe check if multiple importances then can only be of form 1
+                # todo form 2 is specified in the data card only so can't be added to a cell...
+
+            # join all parts with spaces
+            fullLine = " ".join(parts)
+
+            # wrap line by column max
+            line = self._splitByMaxColumn(fullLine)
+            f.write(line + "\n")
+
         f.write("\nc ********** SURFACES **********\n")
-        for surface in self.registry.surfaceDict:
-            f.write(f"")
-            f.write(f"{self.registry.surfaceDict[surface].toOutputString()}")
-            f.write(f" ")
-            f.write(f"{self.registry.surfaceDict[surface].__repr__()}")
-            f.write("\n")
 
-        # todo transformations
+        for surface in self.reg.surfaceDict:
+            parts = []
 
-        # loop over the data card dictionaries
+            if isinstance(surface, int):
+                # surface number
+                parts.append(self.reg.surfaceDict[surface].toOutputString())
+                # surface mnemonic and input parameters
+                parts.append(self.reg.surfaceDict[surface].__repr__())
+
+                # join all parts with spaces
+                fullLine = " ".join(parts)
+
+                # round surface input parameters
+                cleanLine = self._roundInputValues(fullLine)
+
+                # wrap line by column max
+                # line = self._splitByMaxColumn(cleanLine)
+                line = cleanLine
+                f.write(line + "\n")
+
         f.write("\nc ********** DATA **********\n")
-        # todo replace temp data card with materialDict loop etc.
-        f.write("mode p\n")
-        f.write("c\n")
-        f.write("c NIST dry air\n")
-        f.write("m1 6000 -0.000124 7000 -0.755267\n")
-        f.write("   8000 -0.231782 18000 -0.012827\n")
-        f.write("m6 79000 -1.0\n")
-        f.write("c --- SOURCE ---\n")
-        f.write("c point source 14.0 MeV\n")
-        f.write("sdef     pos 7. 0 0. erg=14. par=p\n")
-        f.write("c --- DETECTOR ---\n")
-        f.write("F2:p 2\n")
-        f.write("NPS 2e5\n")
+        # TODO data cards and keywords
 
         # close file
         f.close()
+
+    def setTitle(self, title):
+        if isinstance(title, str):
+            msg = "title must be a string"
+            if 1 > len(title) > 128:
+                msg = "title must be between 1 and 128 characters long"
+        self.title = title
+
+    def _roundInputValues(self, fullLine, precision=6, zeroThreshold=1e-12):
+        lineElements = fullLine.strip().split()
+        formattedLine = []
+
+        for element in lineElements:
+            try:
+                # try converting element to float
+                number = float(element)
+                # apply rounding
+                if abs(number) < zeroThreshold:
+                    # format numerical elements close to zero as zero
+                    formattedLine.append("0")
+                else:
+                    # format other numerical elements with a precision
+                    formattedLine.append(f"{number:.{precision}g}")
+            except ValueError:
+                # string (surface mnemonic) so do not apply precision
+                formattedLine.append(element)
+
+        return " ".join(formattedLine)
+
+    def _splitByMaxColumn(self, fullLine):
+        """
+        edit file so all input lines are limited to the maximum number of columns
+        split lines finish with an ampersand and the new line starts with a space
+        """
+        lineElements = fullLine.strip().split()
+        resultLines = []
+        currentLine = ""
+
+        for element in lineElements:
+            # Check if adding the word would exceed the column limit
+            if len(currentLine) + len(element) + 1 > self.col:
+                # Add current line to result with continuation
+                resultLines.append(currentLine + "&")
+                currentLine = " " + element  # Start new line with a space
+            else:
+                if currentLine:
+                    currentLine += " " + element
+                else:
+                    currentLine = element
+
+        # Add the final line
+        resultLines.append(currentLine)
+        return "\n".join(resultLines)
