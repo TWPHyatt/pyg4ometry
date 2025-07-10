@@ -26,11 +26,14 @@ class Cell:
             self.reg = reg
 
     def addSurface(self, surface):
-        if type(surface) is str and surface in self.reg.surfaceDict:
+        if surface in self.reg.surfaceDict:
             surface = self.reg.surfaceDict[surface]
         self.surfaceList.append(surface)
 
     def addSurfaces(self, surfaces):
+        for i, s in enumerate(surfaces):
+            if s in self.reg.surfaceDict:
+                surfaces[i] = self.reg.surfaceDict[s]
         self.surfaceList.extend(surfaces)
 
     def addMacrobody(self, macrobody):
