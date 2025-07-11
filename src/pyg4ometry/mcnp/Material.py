@@ -22,7 +22,7 @@ class Material:
 
     def toOutputString(self):  # used in cell card
         if self.density is None:
-            return str(self.materialNumber) + " " + " "
+            return str(self.materialNumber)
         else:
             return str(self.materialNumber) + " " + str(self.density)
 
