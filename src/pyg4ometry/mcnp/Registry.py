@@ -89,10 +89,16 @@ class Registry:
         self.transformationDict[transformation.transformationNumber] = transformation
 
     def addMaterial(self, material):
-        if material.materialNumber not in self.materialDict:
-            self.materialDict[material.materialNumber] = [material]
+        if material.density is None:
+            if material.materialNumber != 0:
+                msg = "material number 0 is reserved for void which can only have material number 0"
+                raise TypeError(msg)
+            self.addVoid(material)
         else:
-            self.materialDict[material.materialNumber].append(material)
+            if material.materialNumber not in self.materialDict:
+                self.materialDict[material.materialNumber] = [material]
+            else:
+                self.materialDict[material.materialNumber].append(material)
 
     def addVoid(self, material):
         if 0 not in self.materialDict:
