@@ -46,7 +46,7 @@ class Intersection:
             return self.left.toOutputString() + " " + self.right.toOutputString()
 
     def mesh(self):
-        # print(f"intersection mesh {type(self.left)} {type(self.right)}")
+        print(f" > i {type(self.left)} {type(self.right)}")
         return self.left.mesh().intersect(self.right.mesh())
 
 
@@ -64,7 +64,7 @@ class Union:
         return self.left.toOutputString() + ":" + self.right.toOutputString()
 
     def mesh(self):
-        # print(f"union mesh {type(self.left)} {type(self.right)}")
+        print(f" > u {type(self.left)} {type(self.right)}")
         return self.left.mesh().union(self.right.mesh())
 
 
@@ -86,7 +86,7 @@ class Complement:
             return "#(" + self.item.toOutputString() + ")"
 
     def mesh(self):
-        # print(f"complement mesh {type(self.item)}")
+        print(f" > c {type(self.item)}")
         mesh = self.item.mesh()
         bigBox = mesh.cube(center=[0, 0, 0], radius=[inf, inf, inf])  # big box (universe)
         return bigBox.subtract(mesh)
