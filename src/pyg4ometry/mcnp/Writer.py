@@ -12,7 +12,7 @@ class Writer:
         self.col = columnMax
         if 80 < self.col < 128:
             msg = "For MCNP6.2 the column limit was increased to 128 from 80 in previous versions"
-            print(msg)
+            # print(msg)
         if self.col > 128:
             msg = "For MCNP6.2 the column limit is 128"
             raise TypeError(msg)
@@ -41,9 +41,8 @@ class Writer:
             parts.append(self.reg.cellDict[cell].toOutputString())
 
             # material output
-            materialNumber = self.reg.cellDict[cell].materialNumber
-            materialIndex = self.reg.cellDict[cell].materialIndex
-            parts.append(self.reg.materialDict[materialNumber][materialIndex].toOutputString())
+            materialNumber = self.reg.cellDict[cell].material.materialNumber
+            parts.append(self.reg.materialDict[materialNumber].toOutputString())
 
             # geometry output
             parts.append(self.reg.cellDict[cell].geometry.toOutputString())

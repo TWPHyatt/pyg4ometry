@@ -5,7 +5,7 @@ class Material:
 
     def __init__(self, materialNumber, density=None, reg=None):
         self.density = density
-        if density is None:
+        if self.density is None:
             self.materialNumber = 0
             if reg:
                 reg.addVoid(self)
@@ -13,7 +13,10 @@ class Material:
         else:
             self.materialNumber = materialNumber
             if reg:
-                reg.addMaterial(self)
+                if self.materialNumber in reg.materialDict.keys():
+                    reg.addMaterial(self, replace=True)
+                else:
+                    reg.addMaterial(self)
                 self.reg = reg
 
     def __itter__(self, lis):

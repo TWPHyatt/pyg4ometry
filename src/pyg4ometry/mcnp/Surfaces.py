@@ -21,7 +21,7 @@ from ..geant4.solid import EllipticalCone
 from ..geant4.solid import Torus
 from ..transformation import matrix2axisangle
 
-inf = 1e6
+inf = 1e2
 
 
 class Intersection:
@@ -165,7 +165,7 @@ class SurfaceSolve(Surface):
         # solve for coefficients
         Aprime, Bprime, Cprime = _np.linalg.solve(M, rhs)
 
-        print(Aprime, Bprime, Cprime)
+        # print(Aprime, Bprime, Cprime)
 
         A, B, C, D, E, F, G = 1, 1, 1, 0, 0, 0, 0
 
@@ -318,54 +318,54 @@ class SurfaceSolve(Surface):
 
         # one coordinate pair
         if self.numPoints == 1:
-            print("1 coordinate pair")
+            # print("1 coordinate pair")
             p1 = pi[0]  # distance from axis to plane
             if axis == "x":
-                print("> x plane")
+                # print("> x plane")
                 return PX(D=p1)  # x plane
             elif axis == "y":
-                print("> y plane")
+                # print("> y plane")
                 return PY(D=p1)  # y plane
             elif axis == "z":
-                print("> z plane")
+                # print("> z plane")
                 return PZ(D=p1)  # z plane
 
         # two coordinate pairs
         elif self.numPoints == 2:
-            print("2 coordinate pairs")
+            # print("2 coordinate pairs")
             r1, r2 = ri[0], ri[1]
             p1, p2 = pi[0], pi[1]
             if p1 == p2:
                 if axis == "x":
-                    print("> x plane")
+                    # print("> x plane")
                     return PX(D=p1)  # x plane
                 elif axis == "y":
-                    print("> y plane")
+                    # print("> y plane")
                     return PY(D=p1)  # y plane
                 elif axis == "z":
-                    print("> z plane")
+                    # print("> z plane")
                     return PZ(D=p1)  # z plane
             elif r1 == r2:
                 if axis == "x":
-                    print("> x cylinder")
+                    # print("> x cylinder")
                     return CX(R=r1)  # x cylinder
                 elif axis == "y":
-                    print("> y cylinder")
+                    # print("> y cylinder")
                     return CY(R=r1)  # y cylinder
                 elif axis == "z":
-                    print("> z cylinder")
+                    # print("> z cylinder")
                     return CZ(R=r1)  # z cylinder
             else:  # r1 != r2
                 isCone, data = self._coneSolve(pi, ri)
                 if isCone:
                     if axis == "x":
-                        print("> x cone")
+                        # print("> x cone")
                         return KX(x=data[0], t_sqr=data[1] ** 2, sign=data[2])  # x cone
                     elif axis == "y":
-                        print("> y cone")
+                        # print("> y cone")
                         return KY(y=data[0], t_sqr=data[1] ** 2, sign=data[2])  # y cone
                     elif axis == "z":
-                        print("> z cone")
+                        # print("> z cone")
                         return KZ(z=data[0], t_sqr=data[1] ** 2, sign=data[2])  # z cone
                 else:
                     msg = "could not find a surface for two coordinate pairs"
@@ -375,68 +375,68 @@ class SurfaceSolve(Surface):
         elif self.numPoints == 3:
             isCone = False
             isSphere = False
-            print("3 coordinate pairs")
+            # print("3 coordinate pairs")
             r1, r2, r3 = ri[0], ri[1], ri[2]
             p1, p2, p3 = pi[0], pi[1], pi[2]
-            print("is cone?")
+            # print("is cone?")
             isCone, data = self._coneSolve(pi, ri)
-            print(isCone)
+            # print(isCone)
             if not isCone:
-                print("is sphere?")
+                # print("is sphere?")
                 isSphere, data = self._sphereSolve(pi, ri)
-                print(isSphere)
+                # print(isSphere)
             if p1 == p2 == p3:
                 if axis == "x":
-                    print("> x plane")
+                    # print("> x plane")
                     return PX(D=p1)  # x plane
                 elif axis == "y":
-                    print("> y plane")
+                    # print("> y plane")
                     return PY(D=p1)  # y plane
                 elif axis == "z":
-                    print("> z plane")
+                    # print("> z plane")
                     return PZ(D=p1)  # z plane
             elif r1 == r2 == r3:
                 if axis == "x":
-                    print("> x cylinder")
+                    # print("> x cylinder")
                     return CX(R=r1)  # x cylinder
                 elif axis == "y":
-                    print("> y cylinder")
+                    # print("> y cylinder")
                     return CY(R=r1)  # y cylinder
                 elif axis == "z":
-                    print("> z cylinder")
+                    # print("> z cylinder")
                     return CZ(R=r1)  # z cylinder
             elif isCone:
                 if axis == "x":
-                    print("> x cone")
+                    # print("> x cone")
                     return KX(x=data[0], t_sqr=data[1] ** 2, sign=data[2])  # x cone
                 elif axis == "y":
-                    print("> y cone")
+                    # print("> y cone")
                     return KY(y=data[0], t_sqr=data[1] ** 2, sign=data[2])  # y cone
                 elif axis == "z":
-                    print("> z cone")
+                    # print("> z cone")
                     return KZ(z=data[0], t_sqr=data[1] ** 2, sign=data[2])  # z cone
             elif isSphere:
                 if data[1] == 0:
                     return SO(R=data[2])  # sphere centered at origin
                 else:
                     if axis == "x":
-                        print("> x sphere")
+                        # print("> x sphere")
                         return SX(x=data[0], R=data[2])  # x sphere
                     elif axis == "y":
-                        print("> y sphere")
+                        # print("> y sphere")
                         return SY(y=data[0], R=data[2])  # y sphere
                     elif axis == "z":
-                        print("> z sphere")
+                        # print("> z sphere")
                         return SZ(z=data[0], R=data[2])  # z sphere
             else:
-                print("> quadratic...")
+                # print("> quadratic...")
                 coeffs = self._quadSolve(axis)
 
-                print(
-                    f'A {coeffs["A"]} B {coeffs["B"]} C {coeffs["C"]} \n'
-                    f'D {coeffs["D"]} E {coeffs["E"]} F {coeffs["F"]} \n'
-                    f'G {coeffs["F"]}'
-                )
+                # print(
+                #    f'A {coeffs["A"]} B {coeffs["B"]} C {coeffs["C"]} \n'
+                #    f'D {coeffs["D"]} E {coeffs["E"]} F {coeffs["F"]} \n'
+                #    f'G {coeffs["F"]}'
+                # )
                 msg = "Quadratic equations from surface point definitions not yet fully implemented"
                 raise TypeError(msg)
                 # todo
@@ -589,7 +589,12 @@ class P(Surface):
                 point = self.D * unitNormal
                 point_p = point + translation
                 Dp = normal @ point_p
-                return P(self.A, self.B, self.C, Dp)
+
+                # new surface (prime)
+                s_p = P(self.A, self.B, self.C, Dp)
+                s_p.surfaceNumber = self.surfaceNumber
+
+                return s_p
 
         else:  # rotation and possibly translation
             # transformed plane (prime)
@@ -600,7 +605,11 @@ class P(Surface):
             point_p = rotation @ point + translation
             Dp = normal_p @ point_p
 
-            return P(normal_p[0], normal_p[1], normal_p[2], Dp)
+            # new surface (prime)
+            s_p = P(normal_p[0], normal_p[1], normal_p[2], Dp)
+            s_p.surfaceNumber = self.surfaceNumber
+
+            return s_p
 
     def mesh(self):
         # print(f"surface plane mesh")
@@ -678,7 +687,11 @@ class PX(Surface):
 
         D_p = unitNormal_p @ p0_p
 
-        return P(*unitNormal_p, D_p)
+        # new surface (prime)
+        s_p = P(*unitNormal_p, D_p)
+        s_p.surfaceNumber = self.surfaceNumber
+
+        return s_p
 
     def mesh(self):
         solid = P(
@@ -724,7 +737,11 @@ class PY(Surface):
 
         D_p = unitNormal_p @ p0_p
 
-        return P(*unitNormal_p, D_p)
+        # new surface (prime)
+        s_p = P(*unitNormal_p, D_p)
+        s_p.surfaceNumber = self.surfaceNumber
+
+        return s_p
 
     def mesh(self):
         solid = P(
@@ -770,7 +787,11 @@ class PZ(Surface):
 
         D_p = unitNormal_p @ p0_p
 
-        return P(*unitNormal_p, D_p)
+        # new surface (prime)
+        s_p = P(*unitNormal_p, D_p)
+        s_p.surfaceNumber = self.surfaceNumber
+
+        return s_p
 
     def mesh(self):
         solid = P(
@@ -1670,7 +1691,12 @@ class BOX(Surface):
                 return self
             else:
                 v_p = v + translation
-                return BOX(*v_p, *a1, *a2, *a3)  # box translation
+
+                # new surface (prime)
+                s_p = BOX(*v_p, *a1, *a2, *a3)  # box translation
+                s_p.surfaceNumber = self.surfaceNumber
+
+                return s_p
 
         else:  # rotation
             # transformed box (prime)
@@ -1680,7 +1706,12 @@ class BOX(Surface):
             a3_p = rotation @ a3
             # rotate and translate corner point
             v_p = rotation @ v + translation
-            return BOX(*v_p, *a1_p, *a2_p, *a3_p)  # box translation
+
+            # new surface (prime)
+            s_p = BOX(*v_p, *a1_p, *a2_p, *a3_p)  # box translation
+            s_p.surfaceNumber = self.surfaceNumber
+
+            return s_p
 
     def mesh(self):
         reg = g4Reg()
@@ -1691,7 +1722,7 @@ class BOX(Surface):
             C=self.a1z,
             D=(self.a1x * self.vx) + (self.a1y * self.vy) + (self.a1z * self.vz),
         )
-        print("d1=", (self.a1x * self.vx) + (self.a1y * self.vy) + (self.a1z * self.vz))
+        # print("d1=", (self.a1x * self.vx) + (self.a1y * self.vy) + (self.a1z * self.vz))
         p2 = P(
             A=self.a1x,
             B=self.a1y,
@@ -1700,19 +1731,14 @@ class BOX(Surface):
             + self.a1y * (self.vy + self.a1y)
             + self.a1z * (self.vz + self.a1z),
         )
-        print("d2=", (self.a2x * self.vx) + (self.a2y * self.vy) + (self.a2z * self.vz))
+        # print("d2=", (self.a2x * self.vx) + (self.a2y * self.vy) + (self.a2z * self.vz))
         p3 = P(
             A=self.a2x,
             B=self.a2y,
             C=self.a2z,
             D=(self.a2x * self.vx) + (self.a2y * self.vy) + (self.a2z * self.vz),
         )
-        print(
-            "d3=",
-            self.a2x * (self.vx + self.a2x)
-            + self.a2y * (self.vy + self.a2y)
-            + self.a2z * (self.vz + self.a2z),
-        )
+        # print("d3=", self.a2x * (self.vx + self.a2x) + self.a2y * (self.vy + self.a2y) + self.a2z * (self.vz + self.a2z))
         p4 = P(
             A=self.a2x,
             B=self.a2y,
@@ -1721,14 +1747,14 @@ class BOX(Surface):
             + self.a2y * (self.vy + self.a2y)
             + self.a2z * (self.vz + self.a2z),
         )
-        print("d4=", (self.a3x * self.vx) + (self.a3y * self.vy) + (self.a3z * self.vz))
+        # print("d4=", (self.a3x * self.vx) + (self.a3y * self.vy) + (self.a3z * self.vz))
         p5 = P(
             A=self.a3x,
             B=self.a3y,
             C=self.a3z,
             D=(self.a3x * self.vx) + (self.a3y * self.vy) + (self.a3z * self.vz),
         )
-        print("d5=", (self.a3x * self.vx) + (self.a3y * self.vy) + (self.a3z * self.vz))
+        # print("d5=", (self.a3x * self.vx) + (self.a3y * self.vy) + (self.a3z * self.vz))
         p6 = P(
             A=self.a3x,
             B=self.a3y,
@@ -1737,12 +1763,7 @@ class BOX(Surface):
             + self.a3y * (self.vy + self.a3y)
             + self.a3z * (self.vz + self.a3z),
         )
-        print(
-            "d6=",
-            self.a3x * (self.vx + self.a3x)
-            + self.a3y * (self.vy + self.a3y)
-            + self.a3z * (self.vz + self.a3z),
-        )
+        # print("d6=", self.a3x * (self.vx + self.a3x) + self.a3y * (self.vy + self.a3y) + self.a3z * (self.vz + self.a3z))
 
         geom1 = Intersection(p1, Complement(p2))
         geom2 = Intersection(p3, Complement(p4))
@@ -1879,7 +1900,12 @@ class RCC(Surface):
             else:
                 # print(f"Y translation")
                 v_p = v + translation
-                return RCC(*v_p, *h, self.r)  # rcc translation
+
+                # new surface (prime)
+                s_p = RCC(*v_p, *h, self.r)  # rcc translation
+                s_p.surfaceNumber = self.surfaceNumber
+
+                return s_p
 
         else:  # rotation
             # transform rcc (prime _p)
@@ -1887,7 +1913,12 @@ class RCC(Surface):
             v_p = rotation @ v + translation
             # rotate height vector
             h_p = rotation @ h
-            return RCC(*v_p, *h_p, self.r)  # rcc translation
+
+            # new surface (prime)
+            s_p = RCC(*v_p, *h_p, self.r)  # rcc translation
+            s_p.surfaceNumber = self.surfaceNumber
+
+            return s_p
 
     def mesh(self):
         reg = g4Reg()
@@ -2151,14 +2182,15 @@ class REC(Surface):
             self.v2y is None and self.v2z is None
         ):  # with 10 entries, v2x becomes the minor axis radius
             # direction of minor axis is determined from the cross product of h and v1 vectors
-            print("v2y and v2z are None")
+            msg = "v2y and v2z are None"
+            # print(msg)
             v2 = _np.cross(h, v1)
             if _np.allclose(v2, _np.zeros(len(v2))):
                 msg = "The vectors h and v1 must be orthogonal"
                 raise ValueError(msg)
             else:
                 v2 = v2 / _np.linalg.norm(v2) * self.v2x
-                print(v2)
+                # print(v2)
         else:
             v2 = _np.array([self.v2x, self.v2y, self.v2z])
 

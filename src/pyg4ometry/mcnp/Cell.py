@@ -8,16 +8,13 @@ class Cell:
         geometry=None,
         reg=None,
         cellNumber=None,
-        materialNumber=None,
-        density=None,
+        material=None,
         importance=None,
     ):
         self.surfaceList = surfaces
         self.cellNumber = cellNumber
         self.geometry = geometry
-        self.materialNumber = materialNumber
-        self.materialIndex = None
-        self.density = density
+        self.material = material
         self.importance = []
         if importance:
             self.importance = [importance]
@@ -43,9 +40,7 @@ class Cell:
         self.addSurfaces(macrobody)
 
     def addMaterial(self, material):
-        temp = [key for key, value in self.reg.materialDict.items() if material in value]
-        self.materialNumber = temp[0]
-        self.materialIndex = self.reg.materialDict[self.materialNumber].index(material)
+        self.material = material
 
     def addDensity(self, density):
         self.density = density
@@ -57,11 +52,11 @@ class Cell:
     # reader "cellParams" dictionary
     # maybe this should be an addParamerter function?
     def addImportance(self, importance):
-        if (self.materialNumber == 0) and (importance.xj != (0,)):
-            print(importance.xj)
+        if (self.material.materialNumber == 0) and (importance.xj != (0,)):
+            # print(importance.xj)
             importance.xj = 0
-            print("Cell", self.cellNumber, "is void")
-            print(" > Overriding importance and setting to zero.")
+            # print("Cell", self.cellNumber, "is void")
+            # print(" > Overriding importance and setting to zero.")
         self.importance.append(importance)
 
     def toOutputString(self):

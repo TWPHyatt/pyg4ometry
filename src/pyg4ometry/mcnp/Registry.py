@@ -17,7 +17,7 @@ class Registry:
 
     def addSurface(self, surface, replace=False):
         if replace:
-            if surface.surfaceNumber in self.surfaceDict:
+            if surface.surfaceNumber not in self.surfaceDict:
                 msg = f"Could not find surface {surface.surfaceNumber} in registry."
                 raise TypeError(msg)
             else:
@@ -64,17 +64,22 @@ class Registry:
         for i in range(1, numToAdd + 1, 1):
             self.surfaceDict[float(str(surface.surfaceNumber) + "." + str(i))] = surface
 
+    def addSurfaces(self, surfaces, replace=False):
+        for s in surfaces:
+            if s.surfaceNumber in self.surfaceDict.keys():
+                self.addSurface(s, replace=True)
+            else:
+                self.addSurface(s, replace=False)
+
     def addCell(self, cell, replace=False):
         if replace:
-            if cell.cellNumber in self.cellDict:
+            if cell.cellNumber not in self.cellDict:
                 msg = f"Could not find cell {cell.cellNumber} in registry."
                 raise TypeError(msg)
             else:
                 self.cellDict[cell.cellNumber] = cell
         elif not replace:
-            if cell.cellNumber in self.cellDict:
-                cell.cellNumber = self.getNewCellNumber()
-            if not cell.cellNumber:
+            if cell.cellNumber not in self.cellDict:
                 cell.cellNumber = self.getNewCellNumber()
             self.cellDict[cell.cellNumber] = cell
         else:
@@ -88,23 +93,32 @@ class Registry:
             transformation.transformationNumber = self.getNewTransformationNumber()
         self.transformationDict[transformation.transformationNumber] = transformation
 
-    def addMaterial(self, material):
+    def addMaterial(self, material, replace=False):
         if material.density is None:
             if material.materialNumber != 0:
                 msg = "material number 0 is reserved for void which can only have material number 0"
                 raise TypeError(msg)
             self.addVoid(material)
         else:
-            if material.materialNumber not in self.materialDict:
-                self.materialDict[material.materialNumber] = [material]
+            if replace:
+                if material.materialNumber not in self.materialDict.keys():
+                    msg = f"Could not find material {material.materialNumber} in registry."
+                    raise TypeError(msg)
+                else:
+                    self.materialDict[material.materialNumber] = material
+            elif not replace:
+                if material.materialNumber not in self.materialDict:
+                    material.materialNumber = self.getNewMaterialNumber()
+                self.materialDict[material.materialNumber] = material
             else:
-                self.materialDict[material.materialNumber].append(material)
+                msg = "Replace can only be True or False when adding a material to registry."
+                raise TypeError(msg)
 
     def addVoid(self, material):
-        if 0 not in self.materialDict:
-            self.materialDict[0] = [material]
+        if 0 not in self.materialDict.keys():
+            self.materialDict[0] = material
         else:
-            self.materialDict[0].append(material)
+            self.materialDict[0] = material
 
     def getNewSurfaceNumber(self):
         if len(self.surfaceDict.keys()) == 0:
@@ -115,6 +129,11 @@ class Registry:
         if len(self.cellDict.keys()) == 0:
             return 1
         return max(self.cellDict.keys()) + 1
+
+    def getNewMaterialNumber(self):
+        if len(self.materialDict.keys()) == 0:
+            return 1
+        return max(self.materialDict.keys()) + 1
 
     def getNewMaterialNumber(self):
         if len(self.materialDict.keys()) == 0:
