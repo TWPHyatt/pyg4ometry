@@ -1773,8 +1773,8 @@ class BOX(Surface):
         geom5 = Intersection(geom3, geom4)
 
         mesh = geom5.mesh()
-        bigBox = mesh.cube(center=[0, 0, 0], radius=[inf, inf, inf])  # big box (universe)
-        mesh = bigBox.subtract(mesh)
+        # bigBox = mesh.cube(center=[0, 0, 0], radius=[inf, inf, inf])  # big box (universe)
+        # mesh = bigBox.subtract(mesh)
 
         return mesh
 
@@ -1822,8 +1822,8 @@ class RPP(Surface):
         geom5 = Intersection(geom3, geom4)
 
         mesh = geom5.mesh()
-        bigBox = mesh.cube(center=[0, 0, 0], radius=[inf, inf, inf])  # big box (universe)
-        mesh = bigBox.subtract(mesh)
+        # bigBox = mesh.cube(center=[0, 0, 0], radius=[inf, inf, inf])  # big box (universe)
+        # mesh = bigBox.subtract(mesh)
 
         return mesh
 
@@ -1851,8 +1851,8 @@ class SPH(Surface):
         s1 = S(self.vx, self.vy, self.vz, self.r)
 
         mesh = s1.mesh()
-        bigBox = mesh.cube(center=[0, 0, 0], radius=[inf, inf, inf])  # big box (universe)
-        mesh = bigBox.subtract(mesh)
+        # bigBox = mesh.cube(center=[0, 0, 0], radius=[inf, inf, inf])  # big box (universe)
+        # mesh = bigBox.subtract(mesh)
 
         return mesh
 
@@ -1940,8 +1940,8 @@ class RCC(Surface):
         geom2 = Intersection(geom1, solid)
 
         mesh = geom2.mesh()
-        bigBox = mesh.cube(center=[0, 0, 0], radius=[inf, inf, inf])  # big box (universe)
-        mesh = bigBox.subtract(mesh)
+        # bigBox = mesh.cube(center=[0, 0, 0], radius=[inf, inf, inf])  # big box (universe)
+        # mesh = bigBox.subtract(mesh)
 
         axisIn, angleDeg = self._rotationAboutAxis(h, [0, 0, 1])
         mesh.rotate(axisIn, angleDeg)
@@ -2070,8 +2070,8 @@ class RHP_HEX(Surface):
         geom7 = Intersection(geom5, geom6)
 
         mesh = geom7.mesh()
-        bigBox = mesh.cube(center=[0, 0, 0], radius=[inf, inf, inf])  # big box (universe)
-        mesh = bigBox.subtract(mesh)
+        # bigBox = mesh.cube(center=[0, 0, 0], radius=[inf, inf, inf])  # big box (universe)
+        # mesh = bigBox.subtract(mesh)
 
         axisIn, angleDeg = self._rotationAboutAxis(h, [0, 0, 1])
         mesh.rotate(axisIn, angleDeg)
@@ -2213,8 +2213,8 @@ class REC(Surface):
         geom2 = Intersection(geom1, solid)
 
         mesh = geom2.mesh()
-        bigBox = mesh.cube(center=[0, 0, 0], radius=[inf, inf, inf])  # big box (universe)
-        mesh = bigBox.subtract(mesh)
+        # bigBox = mesh.cube(center=[0, 0, 0], radius=[inf, inf, inf])  # big box (universe)
+        # mesh = bigBox.subtract(mesh)
 
         v1Norm = v1 / _np.linalg.norm(v1)
         v2Norm = v2 / _np.linalg.norm(v2)
@@ -2298,8 +2298,8 @@ class TRC(Surface):
 
         geom1 = Intersection(p1, Complement(solid))
         mesh = geom1.mesh()
-        bigBox = mesh.cube(center=[0, 0, 0], radius=[inf, inf, inf])  # big box (universe)
-        mesh = bigBox.subtract(mesh)
+        # bigBox = mesh.cube(center=[0, 0, 0], radius=[inf, inf, inf])  # big box (universe)
+        # mesh = bigBox.subtract(mesh)
 
         disp = [0, 0, zTopCut]
         mesh.translate(disp)
