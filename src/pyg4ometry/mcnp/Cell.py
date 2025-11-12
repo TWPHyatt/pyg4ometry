@@ -4,18 +4,19 @@ from .Material import Material
 class Cell:
     def __init__(
         self,
-        surfaces=[],
+        surfaces=None,
         geometry=None,
         reg=None,
         cellNumber=None,
         material=None,
         importance=None,
     ):
-        self.surfaceList = surfaces
+        self.surfaceList = [] if surfaces is None else surfaces
         self.cellNumber = cellNumber
         self.geometry = geometry
         self.material = material
-        self.importance = []
+        self.importance = [] if importance is None else [importance]
+        self.reg = reg
         if importance:
             self.importance = [importance]
         if reg:
@@ -23,8 +24,9 @@ class Cell:
             self.reg = reg
 
     def addSurface(self, surface):
-        if surface in self.reg.surfaceDict:
-            surface = self.reg.surfaceDict[surface]
+        if self.reg:
+            if surface in self.reg.surfaceDict:
+                surface = self.reg.surfaceDict[surface]
         self.surfaceList.append(surface)
 
     def addSurfaces(self, surfaces):
