@@ -1,4 +1,5 @@
 from .Material import Material
+import pyg4ometry.mcnp
 
 
 class Cell:
@@ -9,12 +10,16 @@ class Cell:
         reg=None,
         cellNumber=None,
         material=None,
+        cellChildren=None,
         importance=None,
     ):
-        self.surfaceList = [] if surfaces is None else surfaces
+        self.surfaceList = (
+            [] if surfaces is None else surfaces
+        )  # todo can I delete? (replace writer surface list with geometry walk, bottom of tree surfaces)
         self.cellNumber = cellNumber
         self.geometry = geometry
         self.material = material
+        self.cellChildrenList = [] if cellChildren is None else cellChildren
         self.importance = [] if importance is None else [importance]
         self.reg = reg
         if importance:
@@ -22,6 +27,48 @@ class Cell:
         if reg:
             reg.addCell(self)
             self.reg = reg
+
+    def addChildCell(self, childCell):
+        if childCell.geometry is None:
+            msg = f"The child cell geometry is None"
+            raise TypeError(msg)
+        self.geometry = pyg4ometry.mcnp.Intersection(
+            self.geometry, pyg4ometry.mcnp.Complement(childCell.geometry)
+        )
+        self.cellChildrenList.append(childCell)
+        for childSurface in childCell.surfaceList:
+            if childSurface in self.surfaceList:
+                self.surfaceList.remove(childSurface)
+
+        if self.reg:
+            surfaceUpdateReg = []
+            surfaceAddReg = []
+            for regSurface in self.reg.surfaceDict:
+                for childSurface in childCell.surfaceList:
+                    if regSurface == childSurface:
+                        surfaceUpdateReg.append(childSurface)
+                    else:
+                        surfaceAddReg.append(childSurface)
+
+            self.reg.addSurfaces(surfaceUpdateReg, replace=True)
+            self.reg.addSurfaces(surfaceAddReg, replace=False)
+
+    def transformCell(self, rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], translation=[0, 0, 0]):
+        surfaces_p = []
+        for surface in self.surfaceList:
+            surfaces_p.append(surface.transform(rotation=rotation, translation=translation))
+
+        cell_p = Cell(
+            surfaces=surfaces_p,
+            geometry=self.geometry,
+            reg=self.reg,
+            cellNumber=self.cellNumber,
+            material=self.material,
+            cellChildren=self.cellChildrenList,
+            importance=self.importance,
+        )
+
+        return cell_p
 
     def addSurface(self, surface):
         if self.reg:
