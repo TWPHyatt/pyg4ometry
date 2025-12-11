@@ -28,6 +28,8 @@ class Writer:
         Write the output to a given filename. e.g. "model.inp"
         """
 
+        writerSurfaceDict = {}
+
         f = open(fileName, "w")
 
         f.write(f"{self.title}\n")
@@ -62,25 +64,30 @@ class Writer:
 
         f.write("\nc ********** SURFACES **********\n")
 
-        for surface in self.reg.surfaceDict:
+        surfacesToWrite = []
+        for cell in self.reg.cellDict.values():
+            for surface in cell.surfaceList:
+                if surface not in surfacesToWrite:
+                    surfacesToWrite.append(surface)
+
+        for surface in surfacesToWrite:
             parts = []
 
-            if isinstance(surface, int):
-                # surface number
-                parts.append(self.reg.surfaceDict[surface].toOutputString())
-                # surface mnemonic and input parameters
-                parts.append(self.reg.surfaceDict[surface].__repr__())
+            # surface number
+            parts.append(surface.toOutputString())
+            # surface mnemonic and input parameters
+            parts.append(surface.__repr__())
 
-                # join all parts with spaces
-                fullLine = " ".join(parts)
+            # join all parts with spaces
+            fullLine = " ".join(parts)
 
-                # round surface input parameters
-                cleanLine = self._roundInputValues(fullLine)
+            # round surface input parameters
+            cleanLine = self._roundInputValues(fullLine)
 
-                # wrap line by column max
-                # line = self._splitByMaxColumn(cleanLine)
-                line = cleanLine
-                f.write(line + "\n")
+            # wrap line by column max
+            # line = self._splitByMaxColumn(cleanLine)
+            line = cleanLine
+            f.write(line + "\n")
 
         f.write("\nc ********** DATA **********\n")
         # TODO data cards and keywords

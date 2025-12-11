@@ -20,7 +20,8 @@ class Cell:
         self.geometry = geometry
         self.material = material
         self.cellChildrenList = [] if cellChildren is None else cellChildren
-        self.importance = [] if importance is None else [importance]
+        self.importance = [] if importance is None else importance
+        # self.importance = [] if importance is None else [importance]
         self.reg = reg
         if importance:
             self.importance = [importance]
@@ -36,9 +37,11 @@ class Cell:
             self.geometry, pyg4ometry.mcnp.Complement(childCell.geometry)
         )
         self.cellChildrenList.append(childCell)
+        """
         for childSurface in childCell.surfaceList:
             if childSurface in self.surfaceList:
                 self.surfaceList.remove(childSurface)
+        """
 
         if self.reg:
             surfaceUpdateReg = []
@@ -53,22 +56,36 @@ class Cell:
             self.reg.addSurfaces(surfaceUpdateReg, replace=True)
             self.reg.addSurfaces(surfaceAddReg, replace=False)
 
-    def transformCell(self, rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], translation=[0, 0, 0]):
+    def transformCell(
+        self, rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], translation=[0, 0, 0], inPlace=False
+    ):
         surfaces_p = []
         for surface in self.surfaceList:
             surfaces_p.append(surface.transform(rotation=rotation, translation=translation))
 
-        cell_p = Cell(
-            surfaces=surfaces_p,
-            geometry=self.geometry,
-            reg=self.reg,
-            cellNumber=self.cellNumber,
-            material=self.material,
-            cellChildren=self.cellChildrenList,
-            importance=self.importance,
-        )
+        if not inPlace:
+            cell_p = Cell(
+                surfaces=surfaces_p,
+                geometry=self.geometry,
+                reg=self.reg,
+                cellNumber=self.cellNumber,
+                material=self.material,
+                cellChildren=self.cellChildrenList,
+                importance=self.importance,
+            )
+            # transform the child cells of cell_p
+            for childCell in self.cellChildrenList or []:
+                childCell.transformCell(rotation=rotation, translation=translation, inPlace=False)
 
-        return cell_p
+            return cell_p
+
+        else:
+            self.surfaces = surfaces_p
+            # transform the child cells of self
+            for childCell in self.cellChildrenList or []:
+                childCell.transformCell(rotation=rotation, translation=translation, inPlace=True)
+
+            return self
 
     def addSurface(self, surface):
         if self.reg:
@@ -90,9 +107,6 @@ class Cell:
 
     def addMaterial(self, material):
         self.material = material
-
-    def addDensity(self, density):
-        self.density = density
 
     def addGeometry(self, geometry):
         self.geometry = geometry
