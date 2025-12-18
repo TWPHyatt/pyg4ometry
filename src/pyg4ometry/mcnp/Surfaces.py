@@ -35,7 +35,7 @@ class Intersection:
         self.right = right
 
     def toOutputString(self):
-        # IF UNION DOWNSTREAM ADD PARENTHESES (which also are read as an intersection like a " ")
+        # if union downstream add parentheses (also read as an intersection like a " ")
         if isinstance(self.right, Union) and isinstance(self.left, Union):
             return "(" + self.left.toOutputString() + ") (" + self.right.toOutputString() + ")"
         elif isinstance(self.right, Union):
@@ -588,10 +588,10 @@ class P(Surface):
                 unitNormal = normal / _np.linalg.norm(normal)  # unit normal
                 point = self.D * unitNormal
                 point_p = point + translation
-                Dp = normal @ point_p
+                D_p = normal @ point_p
 
                 # new surface (prime)
-                s_p = P(self.A, self.B, self.C, Dp)
+                s_p = P(self.A, self.B, self.C, D_p)
                 s_p.surfaceNumber = self.surfaceNumber
 
                 return s_p
@@ -603,10 +603,10 @@ class P(Surface):
 
             normal_p = rotation @ unitNormal
             point_p = rotation @ point + translation
-            Dp = normal_p @ point_p
+            D_p = normal_p @ point_p
 
             # new surface (prime)
-            s_p = P(normal_p[0], normal_p[1], normal_p[2], Dp)
+            s_p = P(normal_p[0], normal_p[1], normal_p[2], D_p)
             s_p.surfaceNumber = self.surfaceNumber
 
             return s_p
