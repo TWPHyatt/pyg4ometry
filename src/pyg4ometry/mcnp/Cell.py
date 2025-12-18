@@ -29,6 +29,27 @@ class Cell:
             reg.addCell(self)
             self.reg = reg
 
+    def copy(self):
+        """
+        returns a copy of the cell, disconnected in memory
+        """
+
+        # SORT SURFACE NUMBERS AND CELL NUMBERS
+        # NEED A NEW UNIQUE CELL FOR THE CELL
+        # NEED NEW UNIQUE SURFACE NUMBERS FOR ITS SURFACES
+
+        cell_p = Cell(
+            surfaces=self.surfaces,
+            geometry=self.geometry,
+            reg=self.reg,
+            cellNumber=self.cellNumber,
+            material=self.material,
+            cellChildren=self.cellChildren,
+            importance=self.importance,
+        )
+
+        return cell_p
+
     def addChildCell(self, childCell):
         if childCell.geometry is None:
             msg = f"The child cell geometry is None"
