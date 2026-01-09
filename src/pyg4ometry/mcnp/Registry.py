@@ -86,12 +86,20 @@ class Registry:
             msg = "Replace can only be True or False when adding a cell to registry."
             raise TypeError(msg)
 
-    def addTransformation(self, transformation):
-        if transformation.transformationNumber in self.transformationDict:
-            transformation.transformationNumber = self.getNewTransformationNumber()
-        if not transformation.transformationNumber:
-            transformation.transformationNumber = self.getNewTransformationNumber()
-        self.transformationDict[transformation.transformationNumber] = transformation
+    def addTransformation(self, transformation, replace=False):
+        if replace:
+            if transformation.transformationNumber not in self.transformationDict:
+                msg = f"Could not find transformation {transformation.transformationNumber} in registry."
+                raise TypeError(msg)
+            else:
+                self.transformationDict[transformation.transformationNumber] = transformation
+        elif not replace:
+            if transformation.transformationNumber not in self.transformationDict:
+                transformation.transformationNumber = self.getNewTransformationNumber()
+            self.transformationDict[transformation.transformationNumber] = transformation
+        else:
+            msg = "Replace can only be True or False when adding a transformation to registry."
+            raise TypeError(msg)
 
     def addMaterial(self, material, replace=False):
         if material.density is None:
@@ -135,30 +143,7 @@ class Registry:
             return 1
         return max(self.materialDict.keys()) + 1
 
-    def getNewMaterialNumber(self):
-        if len(self.materialDict.keys()) == 0:
-            return 1
-        return max(self.materialDict.keys()) + 1
-
     def getNewTransformationNumber(self):
         if len(self.transformationDict.keys()) == 0:
             return 1
         return max(self.transformationDict.keys()) + 1
-
-    def transformSurfaces(self, surfaces=[], rotation=None, translation=None, option=""):
-        """
-        if option == "replace":
-            loops over the surfaces
-            copies all the surfaces in the list of surfaces
-            does the transforms
-            replaces the surfaces in the registry with the transformed ones >>> with self.addSurface(..., replace="True")
-        elif option == "new":
-            loops over the surfaces
-            copies all the surfaces in the list of surfaces
-            does the transforms
-            adds the transformed surfaces to the registry >>>  with self.addSurface(..., replace="False")
-
-        else:
-            msg = "Block type can only be `replace` of `new`"
-                raise TypeError(msg)
-        """
