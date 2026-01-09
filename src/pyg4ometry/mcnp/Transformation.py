@@ -116,6 +116,15 @@ class TR:
             f"{self.displacementOrigin}"
         )
 
+    def toOutputString(self):
+        return (
+            f"TR {self.displacementVector[0]}  {self.displacementVector[1]} {self.displacementVector[2]} "
+            f"{self.rotationMatrix[0][0]} {self.rotationMatrix[0][1]} {self.rotationMatrix[0][2]} "
+            f"{self.rotationMatrix[1][0]} {self.rotationMatrix[1][1]} {self.rotationMatrix[1][2]} "
+            f"{self.rotationMatrix[2][0]} {self.rotationMatrix[2][1]} {self.rotationMatrix[2][2]} "
+            f"{self.displacementOrigin}"
+        )
+
 
 class TRCL(TR):
     def __init__(
@@ -158,7 +167,16 @@ class TRCL(TR):
 
     def __repr__(self):
         return (
-            f"TRCL: {self.displacementVector}, "
-            f"{self.rotationMatrix.tolist()}, "
+            f"TRCL: {self.displacementVector} "
+            f"{self.rotationMatrix.tolist()} "
+            f"{self.displacementOrigin}"
+        )
+
+    def toOutputString(self):
+        return (
+            f"TRCL {self.displacementVector[0]}  {self.displacementVector[1]} {self.displacementVector[2]} "
+            f"{self.rotationMatrix[0][0]} {self.rotationMatrix[0][1]} {self.rotationMatrix[0][2]} "
+            f"{self.rotationMatrix[1][0]} {self.rotationMatrix[1][1]} {self.rotationMatrix[1][2]} "
+            f"{self.rotationMatrix[2][0]} {self.rotationMatrix[2][1]} {self.rotationMatrix[2][2]} "
             f"{self.displacementOrigin}"
         )

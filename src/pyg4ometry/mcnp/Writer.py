@@ -90,7 +90,10 @@ class Writer:
             f.write(line + "\n")
 
         f.write("\nc ********** DATA **********\n")
-        # TODO data cards and keywords
+        for transformation in self.reg.transformationDict.values():
+            f.write(transformation.toOutputString() + "\n")
+
+        # ToDo data cards and keywords
 
         # close file
         f.close()
