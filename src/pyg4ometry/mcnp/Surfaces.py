@@ -1,7 +1,9 @@
 import numpy as _np
 import pyg4ometry.pycgal.Polygon_mesh_processing
 import sympy as _sp
-from .Cell import Cell
+
+# from .Cell import Cell
+from .Transformation import TR
 from ..pycgal.Point_3 import Point_3_ECER as _Point_3_ECER
 from ..pycgal.Vector_3 import Vector_3_ECER as _Vector_3_ECER
 from ..pycgal.Plane_3 import Plane_3_ECER as _Plane_3_ECER
@@ -93,13 +95,53 @@ class Complement:
 
 
 class Surface:
-    def __init__(self, reg=None, surfaceNumber=None):
+    def __init__(self, reg=None, surfaceNumber=None, transformation=None):
         self.surfaceNumber = surfaceNumber
-        if reg:
+        self.transformation = transformation
+        self.reg = reg
+        if self.reg:
             reg.addSurface(self)
 
     def toOutputString(self):
         return str(self.surfaceNumber)
+
+    def transform(
+        self,
+        rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+        translation=[0, 0, 0],
+        angles=False,
+        TRCL=None,
+    ):
+        """
+        transform surface
+        """
+
+        if TRCL:
+            TR1 = TRCL
+        else:
+            TR1 = TR(
+                o1=translation[0],
+                o2=translation[1],
+                o3=translation[2],
+                rotxx=rotation[0][0],
+                rotyx=rotation[0][1],
+                rotzx=rotation[0][2],
+                rotxy=rotation[1][0],
+                rotyy=rotation[1][1],
+                rotzy=rotation[1][2],
+                rotxz=rotation[2][0],
+                rotyz=rotation[2][1],
+                rotzz=rotation[2][2],
+                angles=angles,
+                reg=self.reg,
+            )
+            if self.reg:
+                self.reg.addTransformation(TR1)
+
+        if self.transformation:
+            self.transformation = self.transformation.compositeTR(TR1, self.transformation)
+        else:
+            self.transformation = TR1
 
     def _rotationAboutAxis(self, a, b):
         a = a / _np.linalg.norm(a)
@@ -569,7 +611,7 @@ class P(Surface):
     def __repr__(self):
         return f"P {self.A} {self.B} {self.C} {self.D}"
 
-    def transform(self, rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], translation=[0, 0, 0]):
+    def _transform(self, rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], translation=[0, 0, 0]):
         rotation = _np.array(rotation)
         translation = _np.array(translation)
 
@@ -612,6 +654,15 @@ class P(Surface):
             return s_p
 
     def mesh(self):
+        if self.transformation:
+            s_p = self._transform(
+                rotation=self.transformation.rotationMatrix,
+                translation=self.transformation.displacementVector,
+            )
+            s = s_p
+        else:
+            s = self
+
         # print(f"surface plane mesh")
         n1 = _Nef_polyhedron_3_ECER(
             _Plane_3_ECER(_Point_3_ECER(0, 0, inf), _Vector_3_ECER(0, 0, 1))
@@ -632,11 +683,11 @@ class P(Surface):
             _Plane_3_ECER(_Point_3_ECER(-inf, 0, 0), _Vector_3_ECER(-1, 0, 0))
         )
 
-        mag = _np.sqrt(self.A**2 + self.B**2 + self.C**2)
+        mag = _np.sqrt(s.A**2 + s.B**2 + s.C**2)
         n7 = _Nef_polyhedron_3_ECER(
             _Plane_3_ECER(
-                _Point_3_ECER(self.A / mag * self.D, self.B / mag * self.D, self.C / mag * self.D),
-                _Vector_3_ECER(-self.A / mag, -self.B / mag, -self.C / mag),
+                _Point_3_ECER(s.A / mag * s.D, s.B / mag * s.D, s.C / mag * s.D),
+                _Vector_3_ECER(-s.A / mag, -s.B / mag, -s.C / mag),
             )
         )
 
@@ -668,7 +719,7 @@ class PX(Surface):
     def __repr__(self):
         return f"PX {self.D}"
 
-    def transform(self, rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], translation=[0, 0, 0]):
+    def _transform(self, rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], translation=[0, 0, 0]):
         rotation = _np.array(rotation)
         translation = _np.array(translation)
         normal = _np.array([1, 0, 0])  # PX normal
@@ -694,15 +745,14 @@ class PX(Surface):
         return s_p
 
     def mesh(self):
-        solid = P(
-            A=1,
-            B=0,
-            C=0,
-            D=self.D,
-        )
-
-        mesh = solid.mesh()
-
+        if self.transformation:
+            s_p = self._transform(
+                rotation=self.transformation.rotationMatrix,
+                translation=self.transformation.displacementVector,
+            )
+        else:
+            s_p = P(A=1, B=0, C=0, D=self.D)
+        mesh = s_p.mesh()
         return mesh
 
 
@@ -718,7 +768,7 @@ class PY(Surface):
     def __repr__(self):
         return f"PY {self.D}"
 
-    def transform(self, rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], translation=[0, 0, 0]):
+    def _transform(self, rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], translation=[0, 0, 0]):
         rotation = _np.array(rotation)
         translation = _np.array(translation)
         normal = _np.array([0, 1, 0])  # PY normal
@@ -744,15 +794,14 @@ class PY(Surface):
         return s_p
 
     def mesh(self):
-        solid = P(
-            A=0,
-            B=1,
-            C=0,
-            D=self.D,
-        )
-
-        mesh = solid.mesh()
-
+        if self.transformation:
+            s_p = self._transform(
+                rotation=self.transformation.rotationMatrix,
+                translation=self.transformation.displacementVector,
+            )
+        else:
+            s_p = P(A=0, B=1, C=0, D=self.D)
+        mesh = s_p.mesh()
         return mesh
 
 
@@ -768,7 +817,7 @@ class PZ(Surface):
     def __repr__(self):
         return f"PZ {self.D}"
 
-    def transform(self, rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], translation=[0, 0, 0]):
+    def _transform(self, rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], translation=[0, 0, 0]):
         rotation = _np.array(rotation)
         translation = _np.array(translation)
         normal = _np.array([0, 0, 1])  # PZ normal
@@ -794,15 +843,14 @@ class PZ(Surface):
         return s_p
 
     def mesh(self):
-        solid = P(
-            A=0,
-            B=0,
-            C=1,
-            D=self.D,
-        )
-
-        mesh = solid.mesh()
-
+        if self.transformation:
+            s_p = self._transform(
+                rotation=self.transformation.rotationMatrix,
+                translation=self.transformation.displacementVector,
+            )
+        else:
+            s_p = P(A=0, B=0, C=1, D=self.D)
+        mesh = s_p.mesh()
         return mesh
 
 
@@ -818,17 +866,35 @@ class SO(Surface):
     def __repr__(self):
         return f"SO {self.R}"
 
-    def mesh(self):
-        reg = g4Reg()
-        solid = Orb(
-            name="",
-            pRMax=self.R,
-            registry=reg,
-        )
-        mesh = solid.mesh()
-        # bigBox = orb_mesh.cube(center=[0, 0, 0], radius=[inf, inf, inf])  # big box (universe)
-        # mesh = bigBox.subtract(mesh)
+    def _transform(self, rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], translation=[0, 0, 0]):
+        rotation = _np.array(rotation)
+        translation = _np.array(translation)
 
+        if _np.allclose(rotation, _np.eye(3)) and _np.allclose(translation, [0, 0, 0]):
+            return self
+
+        # transform to prime (_p)
+        s_p = S(x=translation[0], y=translation[1], z=translation[2], R=self.R)
+        s_p.surfaceNumber = self.surfaceNumber
+
+        return s_p
+
+    def mesh(self):
+        if self.transformation:
+            s_p = self._transform(
+                rotation=self.transformation.rotationMatrix,
+                translation=self.transformation.displacementVector,
+            )
+        else:
+            reg = g4Reg()
+            s_p = Orb(
+                name="",
+                pRMax=self.R,
+                registry=reg,
+            )
+        mesh = s_p.mesh()
+        # bigBox = mesh.cube(center=[0, 0, 0], radius=[inf, inf, inf])  # big box (universe)
+        # mesh = bigBox.subtract(mesh)
         return mesh
 
 
@@ -847,20 +913,38 @@ class S(Surface):
     def __repr__(self):
         return f"S {self.x} {self.y} {self.z} {self.R}"
 
-    def mesh(self):
-        reg = g4Reg()
-        solid = Orb(
-            name="",
-            pRMax=self.R,
-            registry=reg,
-        )
+    def _transform(self, rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], translation=[0, 0, 0]):
+        rotation = _np.array(rotation)
+        translation = _np.array(translation)
 
-        mesh = solid.mesh()
+        if _np.allclose(rotation, _np.eye(3)) and _np.allclose(translation, [0, 0, 0]):
+            return self
+
+        # transform to prime (_p)
+        s_p = S(x=translation[0], y=translation[1], z=translation[2], R=self.R)
+        s_p.surfaceNumber = self.surfaceNumber
+
+        return s_p
+
+    def mesh(self):
+        if self.transformation:
+            s_p = self._transform(
+                rotation=self.transformation.rotationMatrix,
+                translation=self.transformation.displacementVector,
+            )
+        else:
+            reg = g4Reg()
+            s_p = Orb(
+                name="",
+                pRMax=self.R,
+                registry=reg,
+            )
+
+        mesh = s_p.mesh()
         disp = [self.x, self.y, self.z]
         mesh.translate(disp)
         # bigBox = mesh.cube(center=[0, 0, 0], radius=[inf, inf, inf])  # big box (universe)
         # mesh = bigBox.subtract(mesh)
-
         return mesh
 
 
@@ -877,18 +961,35 @@ class SX(Surface):
     def __repr__(self):
         return f"SX {self.x} {self.R}"
 
-    def mesh(self):
-        reg = g4Reg()
-        solid = Orb(
-            name="",
-            pRMax=self.R,
-            registry=reg,
-        )
+    def _transform(self, rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], translation=[0, 0, 0]):
+        rotation = _np.array(rotation)
+        translation = _np.array(translation)
 
-        mesh = solid.mesh()
+        if _np.allclose(rotation, _np.eye(3)) and _np.allclose(translation, [0, 0, 0]):
+            return self
+
+        # transform to prime (_p)
+        s_p = S(x=translation[0], y=translation[1], z=translation[2], R=self.R)
+        s_p.surfaceNumber = self.surfaceNumber
+
+        return s_p
+
+    def mesh(self):
+        if self.transformation:
+            s_p = self._transform(
+                rotation=self.transformation.rotationMatrix,
+                translation=self.transformation.displacementVector,
+            )
+        else:
+            reg = g4Reg()
+            s_p = Orb(
+                name="",
+                pRMax=self.R,
+                registry=reg,
+            )
+        mesh = s_p.mesh()
         disp = [self.x, 0, 0]
         mesh.translate(disp)
-
         return mesh
 
 
@@ -905,18 +1006,35 @@ class SY(Surface):
     def __repr__(self):
         return f"SY {self.y} {self.R}"
 
-    def mesh(self):
-        reg = g4Reg()
-        solid = Orb(
-            name="",
-            pRMax=self.R,
-            registry=reg,
-        )
+    def _transform(self, rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], translation=[0, 0, 0]):
+        rotation = _np.array(rotation)
+        translation = _np.array(translation)
 
-        mesh = solid.mesh()
+        if _np.allclose(rotation, _np.eye(3)) and _np.allclose(translation, [0, 0, 0]):
+            return self
+
+        # transform to prime (_p)
+        s_p = S(x=translation[0], y=translation[1], z=translation[2], R=self.R)
+        s_p.surfaceNumber = self.surfaceNumber
+
+        return s_p
+
+    def mesh(self):
+        if self.transformation:
+            s_p = self._transform(
+                rotation=self.transformation.rotationMatrix,
+                translation=self.transformation.displacementVector,
+            )
+        else:
+            reg = g4Reg()
+            s_p = Orb(
+                name="",
+                pRMax=self.R,
+                registry=reg,
+            )
+        mesh = s_p.mesh()
         disp = [0, self.y, 0]
         mesh.translate(disp)
-
         return mesh
 
 
@@ -933,18 +1051,35 @@ class SZ(Surface):
     def __repr__(self):
         return f"SZ {self.z} {self.R}"
 
-    def mesh(self):
-        reg = g4Reg()
-        solid = Orb(
-            name="",
-            pRMax=self.R,
-            registry=reg,
-        )
+    def _transform(self, rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], translation=[0, 0, 0]):
+        rotation = _np.array(rotation)
+        translation = _np.array(translation)
 
-        mesh = solid.mesh()
+        if _np.allclose(rotation, _np.eye(3)) and _np.allclose(translation, [0, 0, 0]):
+            return self
+
+        # transform to prime (_p)
+        s_p = S(x=translation[0], y=translation[1], z=translation[2], R=self.R)
+        s_p.surfaceNumber = self.surfaceNumber
+
+        return s_p
+
+    def mesh(self):
+        if self.transformation:
+            s_p = self._transform(
+                rotation=self.transformation.rotationMatrix,
+                translation=self.transformation.displacementVector,
+            )
+        else:
+            reg = g4Reg()
+            s_p = Orb(
+                name="",
+                pRMax=self.R,
+                registry=reg,
+            )
+        mesh = s_p.mesh()
         disp = [0, 0, self.z]
         mesh.translate(disp)
-
         return mesh
 
 
@@ -962,9 +1097,18 @@ class C_X(Surface):
     def __repr__(self):
         return f"C/X {self.y} {self.z} {self.R}"
 
+    def _transform(self, rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], translation=[0, 0, 0]):
+        # ToDo
+        # this will be a quadric surface if transformed (GQ or SQ in MCNP)
+        # SB can now mesh quadrics
+        pass
+
     def mesh(self):
+        # if self.transformation:
+        #    s_p = self._transform(rotation=self.transformation.rotationMatrix, translation=self.transformation.displacementVector)
+        # else:
         reg = g4Reg()
-        solid = EllipticalTube(
+        s_p = EllipticalTube(
             name="",
             pDx=self.R,
             pDy=self.R,
@@ -972,7 +1116,7 @@ class C_X(Surface):
             registry=reg,
         )
 
-        mesh = solid.mesh()
+        mesh = s_p.mesh()
         axisIn = [0, 1, 0]
         angleDeg = -90
         mesh.rotate(axisIn, angleDeg)
@@ -996,9 +1140,18 @@ class C_Y(Surface):
     def __repr__(self):
         return f"C/Y {self.x} {self.z} {self.R}"
 
+    def _transform(self, rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], translation=[0, 0, 0]):
+        # ToDo
+        # this will be a quadric surface if transformed (GQ or SQ in MCNP)
+        # SB can now mesh quadrics
+        pass
+
     def mesh(self):
+        # if self.transformation:
+        #    s_p = self._transform(rotation=self.transformation.rotationMatrix, translation=self.transformation.displacementVector)
+        # else:
         reg = g4Reg()
-        solid = EllipticalTube(
+        s_p = EllipticalTube(
             name="",
             pDx=self.R,
             pDy=self.R,
@@ -1006,7 +1159,7 @@ class C_Y(Surface):
             registry=reg,
         )
 
-        mesh = solid.mesh()
+        mesh = s_p.mesh()
         axisIn = [1, 0, 0]
         angleDeg = 90
         mesh.rotate(axisIn, angleDeg)
@@ -1030,9 +1183,18 @@ class C_Z(Surface):
     def __repr__(self):
         return f"C/Z {self.x} {self.y} {self.R}"
 
+    def _transform(self, rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], translation=[0, 0, 0]):
+        # ToDo
+        # this will be a quadric surface if transformed (GQ or SQ in MCNP)
+        # SB can now mesh quadrics
+        pass
+
     def mesh(self):
+        # if self.transformation:
+        #    s_p = self._transform(rotation=self.transformation.rotationMatrix, translation=self.transformation.displacementVector)
+        # else:
         reg = g4Reg()
-        solid = EllipticalTube(
+        s_p = EllipticalTube(
             name="",
             pDx=self.R,
             pDy=self.R,
@@ -1040,7 +1202,7 @@ class C_Z(Surface):
             registry=reg,
         )
 
-        mesh = solid.mesh()
+        mesh = s_p.mesh()
         disp = [self.x, self.y, 0.0]
         mesh.translate(disp)
 
@@ -1059,9 +1221,18 @@ class CX(Surface):
     def __repr__(self):
         return f"CX {self.R}"
 
+    def _transform(self, rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], translation=[0, 0, 0]):
+        # ToDo
+        # this will be a quadric surface if transformed (GQ or SQ in MCNP)
+        # SB can now mesh quadrics
+        pass
+
     def mesh(self):
+        # if self.transformation:
+        #    s_p = self._transform(rotation=self.transformation.rotationMatrix, translation=self.transformation.displacementVector)
+        # else:
         reg = g4Reg()
-        solid = EllipticalTube(
+        s_p = EllipticalTube(
             name="",
             pDx=self.R,
             pDy=self.R,
@@ -1069,7 +1240,7 @@ class CX(Surface):
             registry=reg,
         )
 
-        mesh = solid.mesh()
+        mesh = s_p.mesh()
         axisIn = [0, 1, 0]
         angleDeg = -90
         mesh.rotate(axisIn, angleDeg)
@@ -1089,9 +1260,18 @@ class CY(Surface):
     def __repr__(self):
         return f"CY {self.R}"
 
+    def _transform(self, rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], translation=[0, 0, 0]):
+        # ToDo
+        # this will be a quadric surface if transformed (GQ or SQ in MCNP)
+        # SB can now mesh quadrics
+        pass
+
     def mesh(self):
+        # if self.transformation:
+        #    s_p = self._transform(rotation=self.transformation.rotationMatrix, translation=self.transformation.displacementVector)
+        # else:
         reg = g4Reg()
-        solid = EllipticalTube(
+        s_p = EllipticalTube(
             name="",
             pDx=self.R,
             pDy=self.R,
@@ -1099,7 +1279,7 @@ class CY(Surface):
             registry=reg,
         )
 
-        mesh = solid.mesh()
+        mesh = s_p.mesh()
         axisIn = [1, 0, 0]
         angleDeg = 90
         mesh.rotate(axisIn, angleDeg)
@@ -1119,9 +1299,18 @@ class CZ(Surface):
     def __repr__(self):
         return f"CZ {self.R}"
 
+    def _transform(self, rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], translation=[0, 0, 0]):
+        # ToDo
+        # this will be a quadric surface if transformed (GQ or SQ in MCNP)
+        # SB can now mesh quadrics
+        pass
+
     def mesh(self):
+        # if self.transformation:
+        #    s_p = self._transform(rotation=self.transformation.rotationMatrix, translation=self.transformation.displacementVector)
+        # else:
         reg = g4Reg()
-        solid = EllipticalTube(
+        s_p = EllipticalTube(
             name="",
             pDx=self.R,
             pDy=self.R,
@@ -1129,7 +1318,7 @@ class CZ(Surface):
             registry=reg,
         )
 
-        mesh = solid.mesh()
+        mesh = s_p.mesh()
 
         return mesh
 
@@ -1167,9 +1356,18 @@ class K_X(Surface):
     def __repr__(self):
         return f"K/X {self.x} {self.y} {self.z} {self.t_sqr} {self.sign}"
 
+    def _transform(self, rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], translation=[0, 0, 0]):
+        # ToDo
+        # this will be a quadric surface if transformed (GQ or SQ in MCNP)
+        # SB can now mesh quadrics
+        pass
+
     def mesh(self):
+        # if self.transformation:
+        #    s_p = self._transform(rotation=self.transformation.rotationMatrix, translation=self.transformation.displacementVector)
+        # else:
         reg = g4Reg()
-        solid = EllipticalCone(
+        s_p = EllipticalCone(
             name="",
             pxSemiAxis=self.t_sqr**0.5,
             pySemiAxis=self.t_sqr**0.5,
@@ -1177,7 +1375,7 @@ class K_X(Surface):
             pzTopCut=inf * 0.9999999999,
             registry=reg,
         )
-        mesh = solid.mesh()
+        mesh = s_p.mesh()
 
         if self.sign > 0:
             axisIn = [0, 1, 0]
@@ -1218,9 +1416,18 @@ class K_Y(Surface):
     def __repr__(self):
         return f"K/Y {self.x} {self.y} {self.z} {self.t_sqr} {self.sign}"
 
+    def _transform(self, rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], translation=[0, 0, 0]):
+        # ToDo
+        # this will be a quadric surface if transformed (GQ or SQ in MCNP)
+        # SB can now mesh quadrics
+        pass
+
     def mesh(self):
+        # if self.transformation:
+        #    s_p = self._transform(rotation=self.transformation.rotationMatrix, translation=self.transformation.displacementVector)
+        # else:
         reg = g4Reg()
-        solid = EllipticalCone(
+        s_p = EllipticalCone(
             name="",
             pxSemiAxis=self.t_sqr**0.5,
             pySemiAxis=self.t_sqr**0.5,
@@ -1228,7 +1435,7 @@ class K_Y(Surface):
             pzTopCut=inf * 0.9999999999,
             registry=reg,
         )
-        mesh = solid.mesh()
+        mesh = s_p.mesh()
 
         if self.sign > 0:
             axisIn = [0, 1, 0]
@@ -1269,9 +1476,18 @@ class K_Z(Surface):
     def __repr__(self):
         return f"K/Z {self.x} {self.y} {self.z} {self.t_sqr} {self.sign}"
 
+    def _transform(self, rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], translation=[0, 0, 0]):
+        # ToDo
+        # this will be a quadric surface if transformed (GQ or SQ in MCNP)
+        # SB can now mesh quadrics
+        pass
+
     def mesh(self):
+        # if self.transformation:
+        #    s_p = self._transform(rotation=self.transformation.rotationMatrix, translation=self.transformation.displacementVector)
+        # else:
         reg = g4Reg()
-        solid = EllipticalCone(
+        s_p = EllipticalCone(
             name="",
             pxSemiAxis=self.t_sqr**0.5,
             pySemiAxis=self.t_sqr**0.5,
@@ -1279,7 +1495,7 @@ class K_Z(Surface):
             pzTopCut=inf * 0.9999999999,
             registry=reg,
         )
-        mesh = solid.mesh()
+        mesh = s_p.mesh()
 
         if self.sign > 0:
             axisIn = [0, 1, 0]
@@ -1314,9 +1530,18 @@ class KX(Surface):
     def __repr__(self):
         return f"KX {self.x} {self.t_sqr} {self.sign}"
 
+    def _transform(self, rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], translation=[0, 0, 0]):
+        # ToDo
+        # this will be a quadric surface if transformed (GQ or SQ in MCNP)
+        # SB can now mesh quadrics
+        pass
+
     def mesh(self):
+        # if self.transformation:
+        #    s_p = self._transform(rotation=self.transformation.rotationMatrix, translation=self.transformation.displacementVector)
+        # else:
         reg = g4Reg()
-        solid = EllipticalCone(
+        s_p = EllipticalCone(
             name="",
             pxSemiAxis=self.t_sqr**0.5,
             pySemiAxis=self.t_sqr**0.5,
@@ -1324,7 +1549,7 @@ class KX(Surface):
             pzTopCut=inf * 0.9999999999,
             registry=reg,
         )
-        mesh = solid.mesh()
+        mesh = s_p.mesh()
 
         if self.sign > 0:
             axisIn = [0, 1, 0]
@@ -1363,9 +1588,18 @@ class KY(Surface):
     def __repr__(self):
         return f"KY {self.y} {self.t_sqr} {self.sign}"
 
+    def _transform(self, rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], translation=[0, 0, 0]):
+        # ToDo
+        # this will be a quadric surface if transformed (GQ or SQ in MCNP)
+        # SB can now mesh quadrics
+        pass
+
     def mesh(self):
+        # if self.transformation:
+        #    s_p = self._transform(rotation=self.transformation.rotationMatrix, translation=self.transformation.displacementVector)
+        # else:
         reg = g4Reg()
-        solid = EllipticalCone(
+        s_p = EllipticalCone(
             name="",
             pxSemiAxis=self.t_sqr**0.5,
             pySemiAxis=self.t_sqr**0.5,
@@ -1373,7 +1607,7 @@ class KY(Surface):
             pzTopCut=inf * 0.9999999999,
             registry=reg,
         )
-        mesh = solid.mesh()
+        mesh = s_p.mesh()
 
         if self.sign > 0:
             axisIn = [0, 1, 0]
@@ -1412,9 +1646,18 @@ class KZ(Surface):
     def __repr__(self):
         return f"KZ {self.z} {self.t_sqr} {self.sign}"
 
+    def _transform(self, rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], translation=[0, 0, 0]):
+        # ToDo
+        # this will be a quadric surface if transformed (GQ or SQ in MCNP)
+        # SB can now mesh quadrics
+        pass
+
     def mesh(self):
+        # if self.transformation:
+        #    s_p = self._transform(rotation=self.transformation.rotationMatrix, translation=self.transformation.displacementVector)
+        # else:
         reg = g4Reg()
-        solid = EllipticalCone(
+        s_p = EllipticalCone(
             name="",
             pxSemiAxis=self.t_sqr**0.5,
             pySemiAxis=self.t_sqr**0.5,
@@ -1422,7 +1665,7 @@ class KZ(Surface):
             pzTopCut=inf * 0.9999999999,
             registry=reg,
         )
-        mesh = solid.mesh()
+        mesh = s_p.mesh()
 
         if self.sign > 0:
             axisIn = [0, 1, 0]
@@ -1465,6 +1708,14 @@ class SQ(Surface):
             f" {self.F} {self.G} {self.x} {self.y} {self.z}"
         )
 
+    def _transform(self, rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], translation=[0, 0, 0]):
+        # ToDo
+        pass
+
+    def mesh(self):
+        # SB can now mesh quadrics
+        pass
+
 
 class GQ(Surface):
     """
@@ -1491,6 +1742,14 @@ class GQ(Surface):
             f" {self.F} {self.G} {self.H} {self.J} {self.K}"
         )
 
+    def _transform(self, rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], translation=[0, 0, 0]):
+        # ToDo
+        pass
+
+    def mesh(self):
+        # SB can now mesh quadrics
+        pass
+
 
 class TX(Surface):
     """
@@ -1510,6 +1769,10 @@ class TX(Surface):
 
     def __repr__(self):
         return f"TX {self.x} {self.y} {self.z} {self.A} {self.B} {self.C}"
+
+    def _transform(self, rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], translation=[0, 0, 0]):
+        # I DONT THINK THIS IS POSSIBLE AS A TORUS CANNOT BE REPRESENTED BY 2ND-DEGREE POLYNOMIAL, SO NO GQ OR SQ???
+        pass
 
     def mesh(self):
         reg = g4Reg()
@@ -1555,6 +1818,10 @@ class TY(Surface):
     def __repr__(self):
         return f"TY {self.x} {self.y} {self.z} {self.A} {self.B} {self.C}"
 
+    def _transform(self, rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], translation=[0, 0, 0]):
+        # I DONT THINK THIS IS POSSIBLE AS A TORUS CANNOT BE REPRESENTED BY 2ND-DEGREE POLYNOMIAL, SO NO GQ OR SQ???
+        pass
+
     def mesh(self):
         reg = g4Reg()
         solid = Torus(
@@ -1598,6 +1865,10 @@ class TZ(Surface):
 
     def __repr__(self):
         return f"TZ {self.x} {self.y} {self.z} {self.A} {self.B} {self.C} "
+
+    def _transform(self, rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], translation=[0, 0, 0]):
+        # I DONT THINK THIS IS POSSIBLE AS A TORUS CANNOT BE REPRESENTED BY 2ND-DEGREE POLYNOMIAL, SO NO GQ OR SQ???
+        pass
 
     def mesh(self):
         reg = g4Reg()
@@ -1675,7 +1946,7 @@ class BOX(Surface):
             f" {self.a2x} {self.a2y} {self.a2z} {self.a3x} {self.a3y} {self.a3z}"
         )
 
-    def transform(self, rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], translation=[0, 0, 0]):
+    def _transform(self, rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], translation=[0, 0, 0]):
         rotation = _np.array(rotation)
         translation = _np.array(translation)
         # box
@@ -1714,54 +1985,55 @@ class BOX(Surface):
             return s_p
 
     def mesh(self):
-        reg = g4Reg()
+        if self.transformation:
+            s_p = self._transform(
+                rotation=self.transformation.rotationMatrix,
+                translation=self.transformation.displacementVector,
+            )
+            s = s_p
+        else:
+            s = self
 
         p1 = P(
-            A=self.a1x,
-            B=self.a1y,
-            C=self.a1z,
-            D=(self.a1x * self.vx) + (self.a1y * self.vy) + (self.a1z * self.vz),
+            A=s.a1x,
+            B=s.a1y,
+            C=s.a1z,
+            D=(s.a1x * s.vx) + (s.a1y * s.vy) + (s.a1z * s.vz),
         )
         # print("d1=", (self.a1x * self.vx) + (self.a1y * self.vy) + (self.a1z * self.vz))
         p2 = P(
-            A=self.a1x,
-            B=self.a1y,
-            C=self.a1z,
-            D=self.a1x * (self.vx + self.a1x)
-            + self.a1y * (self.vy + self.a1y)
-            + self.a1z * (self.vz + self.a1z),
+            A=s.a1x,
+            B=s.a1y,
+            C=s.a1z,
+            D=s.a1x * (s.vx + s.a1x) + s.a1y * (s.vy + s.a1y) + s.a1z * (s.vz + s.a1z),
         )
         # print("d2=", (self.a2x * self.vx) + (self.a2y * self.vy) + (self.a2z * self.vz))
         p3 = P(
-            A=self.a2x,
-            B=self.a2y,
-            C=self.a2z,
-            D=(self.a2x * self.vx) + (self.a2y * self.vy) + (self.a2z * self.vz),
+            A=s.a2x,
+            B=s.a2y,
+            C=s.a2z,
+            D=(s.a2x * s.vx) + (s.a2y * s.vy) + (s.a2z * s.vz),
         )
         # print("d3=", self.a2x * (self.vx + self.a2x) + self.a2y * (self.vy + self.a2y) + self.a2z * (self.vz + self.a2z))
         p4 = P(
-            A=self.a2x,
-            B=self.a2y,
-            C=self.a2z,
-            D=self.a2x * (self.vx + self.a2x)
-            + self.a2y * (self.vy + self.a2y)
-            + self.a2z * (self.vz + self.a2z),
+            A=s.a2x,
+            B=s.a2y,
+            C=s.a2z,
+            D=s.a2x * (s.vx + s.a2x) + s.a2y * (s.vy + s.a2y) + s.a2z * (s.vz + s.a2z),
         )
         # print("d4=", (self.a3x * self.vx) + (self.a3y * self.vy) + (self.a3z * self.vz))
         p5 = P(
-            A=self.a3x,
-            B=self.a3y,
-            C=self.a3z,
-            D=(self.a3x * self.vx) + (self.a3y * self.vy) + (self.a3z * self.vz),
+            A=s.a3x,
+            B=s.a3y,
+            C=s.a3z,
+            D=(s.a3x * s.vx) + (s.a3y * s.vy) + (s.a3z * s.vz),
         )
         # print("d5=", (self.a3x * self.vx) + (self.a3y * self.vy) + (self.a3z * self.vz))
         p6 = P(
-            A=self.a3x,
-            B=self.a3y,
-            C=self.a3z,
-            D=self.a3x * (self.vx + self.a3x)
-            + self.a3y * (self.vy + self.a3y)
-            + self.a3z * (self.vz + self.a3z),
+            A=s.a3x,
+            B=s.a3y,
+            C=s.a3z,
+            D=s.a3x * (s.vx + s.a3x) + s.a3y * (s.vy + s.a3y) + s.a3z * (s.vz + s.a3z),
         )
         # print("d6=", self.a3x * (self.vx + self.a3x) + self.a3y * (self.vy + self.a3y) + self.a3z * (self.vz + self.a3z))
 
@@ -1805,25 +2077,50 @@ class RPP(Surface):
             f" {self.ymin} {self.ymax} {self.zmin} {self.zmax}"
         )
 
+    def _transform(self, rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], translation=[0, 0, 0]):
+        s_p = BOX(
+            vx=self.xmin,
+            vy=self.ymin,
+            vz=self.zmin,
+            a1x=self.xmax - self.xmin,
+            a1y=0,
+            a1z=0,
+            a2x=0,
+            a2y=self.ymax - self.ymin,
+            a2z=0,
+            a3x=0,
+            a3y=0,
+            a3z=self.zmax - self.zmin,
+        )
+        s_p = s_p._transform(rotation=rotation, translation=translation)
+        return s_p
+
     def mesh(self):
-        reg = g4Reg()
-        p1 = PX(self.xmin)
-        p2 = PX(self.xmax)
-        p3 = PY(self.ymin)
-        p4 = PY(self.ymax)
-        p5 = PZ(self.zmin)
-        p6 = PZ(self.zmax)
+        if self.transformation:
+            s_p = self._transform(
+                rotation=self.transformation.rotationMatrix,
+                translation=self.transformation.displacementVector,
+            )
+            mesh = s_p.mesh()
+        else:
+            p1 = PX(self.xmin)
+            p2 = PX(self.xmax)
+            p3 = PY(self.ymin)
+            p4 = PY(self.ymax)
+            p5 = PZ(self.zmin)
+            p6 = PZ(self.zmax)
 
-        geom1 = Intersection(p1, Complement(p2))
-        geom2 = Intersection(p3, Complement(p4))
-        geom3 = Intersection(p5, Complement(p6))
+            geom1 = Intersection(p1, Complement(p2))
+            geom2 = Intersection(p3, Complement(p4))
+            geom3 = Intersection(p5, Complement(p6))
 
-        geom4 = Intersection(geom1, geom2)
-        geom5 = Intersection(geom3, geom4)
+            geom4 = Intersection(geom1, geom2)
+            geom5 = Intersection(geom3, geom4)
 
-        mesh = geom5.mesh()
-        bigBox = mesh.cube(center=[0, 0, 0], radius=[inf, inf, inf])  # big box (universe)
-        mesh = bigBox.subtract(mesh)
+            mesh = geom5.mesh()
+
+            bigBox = mesh.cube(center=[0, 0, 0], radius=[inf, inf, inf])  # big box (universe)
+            mesh = bigBox.subtract(mesh)
 
         return mesh
 
@@ -1846,11 +2143,34 @@ class SPH(Surface):
     def __repr__(self):
         return f"SPH {self.vx} {self.vy} {self.vz} {self.r}"
 
-    def mesh(self):
-        reg = g4Reg()
-        s1 = S(self.vx, self.vy, self.vz, self.r)
+    def _transform(self, rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], translation=[0, 0, 0]):
+        rotation = _np.array(rotation)
+        translation = _np.array(translation)
 
-        mesh = s1.mesh()
+        if _np.allclose(rotation, _np.eye(3)) and _np.allclose(translation, [0, 0, 0]):
+            return self
+
+        # transform to prime (_p)
+        s_p = S(
+            x=self.vx + translation[0],
+            y=self.vy + translation[1],
+            z=self.vz + translation[2],
+            R=self.r,
+        )
+        s_p.surfaceNumber = self.surfaceNumber
+
+        return s_p
+
+    def mesh(self):
+        if self.transformation:
+            s_p = self._transform(
+                rotation=self.transformation.rotationMatrix,
+                translation=self.transformation.displacementVector,
+            )
+        else:
+            s_p = S(self.vx, self.vy, self.vz, self.r)
+
+        mesh = s_p.mesh()
         bigBox = mesh.cube(center=[0, 0, 0], radius=[inf, inf, inf])  # big box (universe)
         mesh = bigBox.subtract(mesh)
 
@@ -1880,7 +2200,7 @@ class RCC(Surface):
     def __repr__(self):
         return f"RCC {self.vx} {self.vy} {self.vz} {self.hx} {self.hy} {self.hz} {self.r}"
 
-    def transform(self, rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], translation=[0, 0, 0]):
+    def _transform(self, rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], translation=[0, 0, 0]):
         rotation = _np.array(rotation)
         translation = _np.array(translation)
         # rcc
@@ -1921,18 +2241,26 @@ class RCC(Surface):
             return s_p
 
     def mesh(self):
-        reg = g4Reg()
+        if self.transformation:
+            s_p = self._transform(
+                rotation=self.transformation.rotationMatrix,
+                translation=self.transformation.displacementVector,
+            )
+            s = s_p
+        else:
+            s = self
 
+        reg = g4Reg()
         solid = EllipticalTube(
             name="",
-            pDx=self.r,
-            pDy=self.r,
+            pDx=s.r,
+            pDy=s.r,
             pDz=inf,
             registry=reg,
         )
 
-        h = _np.array([self.hx, self.hy, self.hz])
-        hMag = _np.sqrt(self.hx**2 + self.hy**2 + self.hz**2)
+        h = _np.array([s.hx, s.hy, s.hz])
+        hMag = _np.sqrt(s.hx**2 + s.hy**2 + s.hz**2)
         p1 = PZ(0)
         p2 = PZ(hMag)
 
@@ -1940,13 +2268,14 @@ class RCC(Surface):
         geom2 = Intersection(geom1, solid)
 
         mesh = geom2.mesh()
-        bigBox = mesh.cube(center=[0, 0, 0], radius=[inf, inf, inf])  # big box (universe)
-        mesh = bigBox.subtract(mesh)
 
         axisIn, angleDeg = self._rotationAboutAxis(h, [0, 0, 1])
         mesh.rotate(axisIn, angleDeg)
-        disp = [self.vx, self.vy, self.vz]
+        disp = [s.vx, s.vy, s.vz]
         mesh.translate(disp)
+
+        bigBox = mesh.cube(center=[0, 0, 0], radius=[inf, inf, inf])  # big box (universe)
+        mesh = bigBox.subtract(mesh)
 
         return mesh
 
@@ -2010,7 +2339,17 @@ class RHP_HEX(Surface):
             f" {self.t1} {self.t2} {self.t3}"
         )
 
+    def _transform(self):
+        # ToDo
+        # will requre repositioning 8 planes with rotations and translations
+        pass
+
     def mesh(self):
+        # if self.transformation:
+        #    s_p = self._transform(rotation=self.transformation.rotationMatrix, translation=self.transformation.displacementVector)
+        #    s = s_p
+        # else:
+        #    s = self
 
         v = _np.array([self.v1, self.v2, self.v3])
         r = _np.array([self.r1, self.r2, self.r3])
@@ -2172,6 +2511,10 @@ class REC(Surface):
                 f" {self.v2x} {self.v2y} {self.v2z}"
             )
 
+    def _transform(self):
+        # ToDo
+        pass
+
     def mesh(self):
         v = _np.array([self.vx, self.vy, self.vz])
         h = _np.array([self.hx, self.hy, self.hz])
@@ -2259,7 +2602,17 @@ class TRC(Surface):
             f" {self.r1} {self.r2}"
         )
 
+    def _transform(self):
+        # ToDo
+        pass
+
     def mesh(self):
+        # if self.transformation:
+        #    s_p = self._transform(rotation=self.transformation.rotationMatrix, translation=self.transformation.displacementVector)
+        #    s = s_p
+        # else:
+        #    s = self
+
         reg = g4Reg()
 
         # G4 cone has eqn: (x/xSemiAxis)**2 + (y/ySemiAxis)**2 = (zHeight - z)**2
@@ -2341,6 +2694,10 @@ class ELL(Surface):
     def __repr__(self):
         return f"ELL {self.v1x} {self.v1y} {self.v1z} {self.v2x} {self.v2y} {self.v2z} {self.rm}"
 
+    def _transform(self):
+        # ToDo
+        pass
+
     def mesh(self):
         reg = g4Reg()
         # TODO
@@ -2380,6 +2737,10 @@ class WED(Surface):
             f" {self.v2x} {self.v2y} {self.v2z}"
             f" {self.v3x} {self.v3y} {self.v3z}"
         )
+
+    def _transform(self):
+        # ToDo
+        pass
 
     def mesh(self):
         reg = g4Reg()
@@ -2479,6 +2840,10 @@ class ARB(Surface):
             f" {self.n1} {self.n2} {self.n3}"
             f" {self.n4} {self.n5} {self.n6}"
         )
+
+    def _transform(self):
+        # ToDo
+        pass
 
     def mesh(self):
         reg = g4Reg()
