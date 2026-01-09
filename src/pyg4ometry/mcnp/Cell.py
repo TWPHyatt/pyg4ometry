@@ -86,8 +86,9 @@ class Cell:
         """
         transform cell
         """
-
-        TRCL1 = TRCL(*translation, *rotation[0], *rotation[1], *rotation[2], angles=angles)
+        TRCL1 = TRCL(
+            *translation, *rotation[0], *rotation[1], *rotation[2], angles=angles, reg=self.reg
+        )
 
         if self.reg:
             if TRCL1 not in self.reg.transformationDict:
@@ -98,11 +99,13 @@ class Cell:
         else:
             self.transformation = TRCL1
 
-        # Apply cell transform to all surfaces of the cell
+        # apply cell transform to all surfaces of the cell
         self._walkGeometryTreeAndTransformSurfaces(self.geometry, TRCL1)
 
-        # if cell hierarchy need to go down and apply composite transforms to surfaces
-        # self._walkCellHierarchyAndTransformSurfaces(self, hierarchy, TRCL1)
+        # if cell has children cells, need to go down hierarchy and apply composite transforms to surfaces
+        if self.cellChildrenList is not None:
+            for childCell in self.cellChildrenList:
+                childCell._walkCellHierarchyAndTransformSurfaces(childCell.geometry, TRCL1)
 
     def _walkGeometryTreeAndTransformSurfaces(self, geometry, TRCL1):
         """
@@ -119,31 +122,31 @@ class Cell:
         elif isinstance(geometry, Complement):
             self._walkGeometryTreeAndTransformSurfaces(geometry.item, TRCL1)
 
-    def _walkCellHierarchyAndTransformSurfaces(self, hierarchy, TRCL1):
+    def _walkCellHierarchyAndTransformSurfaces(self, geometry, TRCL1):
         """
         1. walk cell hierarchy
         2. stack the composite transformations recursively down the cell hierarchy
         3. at each surface apply the composite transformation SO FAR transformation to the surface
         """
-        if isinstance(hierarchy, Surface):
-            hierarchy.transform(rotation=TRCL1.rotationMatrix, translation=TRCL1.displacementVector)
-        elif isinstance(hierarchy, Intersection):
+        if isinstance(geometry, Surface):
+            geometry.transform(rotation=TRCL1.rotationMatrix, translation=TRCL1.displacementVector)
+        elif isinstance(geometry, Intersection):
             self._walkGeometryTreeAndTransformSurfaces(
-                hierarchy.left, self.transformation.compositeTR(TRCL1)
+                geometry.left, self.transformation.compositeTR(TRCL1)
             )
             self._walkGeometryTreeAndTransformSurfaces(
-                hierarchy.right, self.transformation.compositeTR(TRCL1)
+                geometry.right, self.transformation.compositeTR(TRCL1)
             )
-        elif isinstance(hierarchy, Union):
+        elif isinstance(geometry, Union):
             self._walkGeometryTreeAndTransformSurfaces(
-                hierarchy.left, self.transformation.compositeTR(TRCL1)
+                geometry.left, self.transformation.compositeTR(TRCL1)
             )
             self._walkGeometryTreeAndTransformSurfaces(
-                hierarchy.right, self.transformation.compositeTR(TRCL1)
+                geometry.right, self.transformation.compositeTR(TRCL1)
             )
-        elif isinstance(hierarchy, Complement):
+        elif isinstance(geometry, Complement):
             self._walkGeometryTreeAndTransformSurfaces(
-                hierarchy.item, self.transformation.compositeTR(TRCL1)
+                geometry.item, self.transformation.compositeTR(TRCL1)
             )
 
     def _bakeTransform(self):

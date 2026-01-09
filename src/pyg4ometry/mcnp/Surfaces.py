@@ -2,7 +2,6 @@ import numpy as _np
 import pyg4ometry.pycgal.Polygon_mesh_processing
 import sympy as _sp
 
-# from .Cell import Cell
 from .Transformation import TR
 from ..pycgal.Point_3 import Point_3_ECER as _Point_3_ECER
 from ..pycgal.Vector_3 import Vector_3_ECER as _Vector_3_ECER
@@ -82,7 +81,7 @@ class Complement:
     def toOutputString(self):
         if isinstance(self.item, Surface):
             return "-" + str(self.item.surfaceNumber)
-        elif isinstance(self.item, Cell):
+        elif isinstance(self.item, pyg4ometry.mcnp.Cell):
             return "#" + str(self.item.cellNumber)
         else:
             return "#(" + self.item.toOutputString() + ")"
@@ -120,20 +119,7 @@ class Surface:
             TR1 = TRCL
         else:
             TR1 = TR(
-                o1=translation[0],
-                o2=translation[1],
-                o3=translation[2],
-                rotxx=rotation[0][0],
-                rotyx=rotation[0][1],
-                rotzx=rotation[0][2],
-                rotxy=rotation[1][0],
-                rotyy=rotation[1][1],
-                rotzy=rotation[1][2],
-                rotxz=rotation[2][0],
-                rotyz=rotation[2][1],
-                rotzz=rotation[2][2],
-                angles=angles,
-                reg=self.reg,
+                *translation, *rotation[0], *rotation[1], *rotation[2], angles=angles, reg=self.reg
             )
             if self.reg:
                 self.reg.addTransformation(TR1)
