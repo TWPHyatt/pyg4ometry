@@ -78,6 +78,9 @@ class Writer:
             # surface mnemonic and input parameters
             parts.append(surface.__repr__())
 
+            if surface.transformation is not None:
+                parts.insert(1, str(surface.transformation.transformationNumber))
+
             # join all parts with spaces
             fullLine = " ".join(parts)
 
@@ -91,7 +94,10 @@ class Writer:
 
         f.write("\nc ********** DATA **********\n")
         for transformation in self.reg.transformationDict.values():
-            f.write(transformation.toOutputString() + "\n")
+            fullLine = transformation.toOutputString()
+            # wrap line by column max
+            line = self._splitByMaxColumn(fullLine)
+            f.write(line + "\n")
 
         # ToDo data cards and keywords
 

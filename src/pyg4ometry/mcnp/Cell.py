@@ -95,7 +95,7 @@ class Cell:
                 self.reg.addTransformation(TRCL1)
 
         if self.transformation:
-            self.transformation = self.transformation.compositeTR(TRCL1, self.transformation)
+            self.transformation.compositeTR(TRCL1)
         else:
             self.transformation = TRCL1
 
@@ -105,14 +105,14 @@ class Cell:
         # if cell has children cells, need to go down hierarchy and apply composite transforms to surfaces
         if self.cellChildrenList is not None:
             for childCell in self.cellChildrenList:
-                childCell._walkCellHierarchyAndTransformSurfaces(childCell.geometry, TRCL1)
+                childCell._walkGeometryTreeAndTransformSurfaces(childCell.geometry, TRCL1)
 
     def _walkGeometryTreeAndTransformSurfaces(self, geometry, TRCL1):
         """
         walk geometry tree and at each surface apply the transformation to the surface
         """
         if isinstance(geometry, Surface):
-            geometry.transform(rotation=None, translation=None, TRCL=TRCL1)
+            geometry.transform(rotation=TRCL1.rotationMatrix, translation=TRCL1.displacementVector)
         elif isinstance(geometry, Intersection):
             self._walkGeometryTreeAndTransformSurfaces(geometry.left, TRCL1)
             self._walkGeometryTreeAndTransformSurfaces(geometry.right, TRCL1)
@@ -129,25 +129,15 @@ class Cell:
         3. at each surface apply the composite transformation SO FAR transformation to the surface
         """
         if isinstance(geometry, Surface):
-            geometry.transform(rotation=TRCL1.rotationMatrix, translation=TRCL1.displacementVector)
+            geometry.transform(rotation=None, translation=None)
         elif isinstance(geometry, Intersection):
-            self._walkGeometryTreeAndTransformSurfaces(
-                geometry.left, self.transformation.compositeTR(TRCL1)
-            )
-            self._walkGeometryTreeAndTransformSurfaces(
-                geometry.right, self.transformation.compositeTR(TRCL1)
-            )
+            self._walkGeometryTreeAndTransformSurfaces(geometry.left, TRCL1)
+            self._walkGeometryTreeAndTransformSurfaces(geometry.right, TRCL1)
         elif isinstance(geometry, Union):
-            self._walkGeometryTreeAndTransformSurfaces(
-                geometry.left, self.transformation.compositeTR(TRCL1)
-            )
-            self._walkGeometryTreeAndTransformSurfaces(
-                geometry.right, self.transformation.compositeTR(TRCL1)
-            )
+            self._walkGeometryTreeAndTransformSurfaces(geometry.left, TRCL1)
+            self._walkGeometryTreeAndTransformSurfaces(geometry.right, TRCL1)
         elif isinstance(geometry, Complement):
-            self._walkGeometryTreeAndTransformSurfaces(
-                geometry.item, self.transformation.compositeTR(TRCL1)
-            )
+            self._walkGeometryTreeAndTransformSurfaces(geometry.item, TRCL1)
 
     def _bakeTransform(self):
         # cannot have TRCL number >999
@@ -221,24 +211,3 @@ class IMP:
         else:
             x = str(self.xj)
             return "IMP:" + str(self.pl) + "=" + x
-
-    def _walkGeometryTreeAndMesh(self, geometry):
-        """
-        walk geometry tree and at each surface apply the transformation to the surface
-        """
-        if isinstance(geometry, Surface):
-            geometry.mesh()
-        elif isinstance(geometry, Intersection):
-            self._walkGeometryTreeAndMesh(geometry.left)
-            self._walkGeometryTreeAndMesh(geometry.right)
-        elif isinstance(geometry, Union):
-            self._walkGeometryTreeAndMesh(geometry.left)
-            self._walkGeometryTreeAndMesh(geometry.right)
-        elif isinstance(geometry, Complement):
-            self._walkGeometryTreeAndMesh(geometry.item)
-
-    def mesh(self, geometry):
-        """
-        mesh every surface in a cell's geometry
-        """
-        self._walkGeometryTreeAndMesh(geometry)

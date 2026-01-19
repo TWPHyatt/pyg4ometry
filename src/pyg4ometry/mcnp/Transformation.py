@@ -98,16 +98,25 @@ class TR:
             reg.addTransformation(self)
             self.reg = reg
 
-    def compositeTR(self, TR1, TR2):
+    def copy(self):
+        copyTR = TR(
+            *self.displacementVector,
+            *self.rotationMatrix[0],
+            *self.rotationMatrix[1],
+            *self.rotationMatrix[2],
+            angles=self.angles,
+            displacementOrigin=self.displacementOrigin,
+        )
+        return copyTR
+
+    def compositeTR(self, TR2):
         """
         combines two transformations
         """
-        TR3 = TR()
-        TR3.displacementVector[0] = TR1.displacementVector[0] + TR2.displacementVector[0]
-        TR3.displacementVector[1] = TR1.displacementVector[1] + TR2.displacementVector[1]
-        TR3.displacementVector[2] = TR1.displacementVector[2] + TR2.displacementVector[2]
-        TR3.rotationMatrix = TR1.rotationMatrix @ TR2.rotationMatrix
-        return TR3
+        self.displacementVector[0] = self.displacementVector[0] + TR2.displacementVector[0]
+        self.displacementVector[1] = self.displacementVector[1] + TR2.displacementVector[1]
+        self.displacementVector[2] = self.displacementVector[2] + TR2.displacementVector[2]
+        self.rotationMatrix = self.rotationMatrix @ TR2.rotationMatrix
 
     def __repr__(self):
         return (
@@ -118,7 +127,8 @@ class TR:
 
     def toOutputString(self):
         return (
-            f"TR {self.displacementVector[0]}  {self.displacementVector[1]} {self.displacementVector[2]} "
+            f"TR{self.transformationNumber} "
+            f"{self.displacementVector[0]}  {self.displacementVector[1]} {self.displacementVector[2]} "
             f"{self.rotationMatrix[0][0]} {self.rotationMatrix[0][1]} {self.rotationMatrix[0][2]} "
             f"{self.rotationMatrix[1][0]} {self.rotationMatrix[1][1]} {self.rotationMatrix[1][2]} "
             f"{self.rotationMatrix[2][0]} {self.rotationMatrix[2][1]} {self.rotationMatrix[2][2]} "
@@ -174,7 +184,8 @@ class TRCL(TR):
 
     def toOutputString(self):
         return (
-            f"TRCL {self.displacementVector[0]}  {self.displacementVector[1]} {self.displacementVector[2]} "
+            f"TRCL{self.transformationNumber} "
+            f"{self.displacementVector[0]}  {self.displacementVector[1]} {self.displacementVector[2]} "
             f"{self.rotationMatrix[0][0]} {self.rotationMatrix[0][1]} {self.rotationMatrix[0][2]} "
             f"{self.rotationMatrix[1][0]} {self.rotationMatrix[1][1]} {self.rotationMatrix[1][2]} "
             f"{self.rotationMatrix[2][0]} {self.rotationMatrix[2][1]} {self.rotationMatrix[2][2]} "

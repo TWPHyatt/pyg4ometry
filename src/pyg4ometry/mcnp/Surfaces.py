@@ -109,23 +109,19 @@ class Surface:
         rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]],
         translation=[0, 0, 0],
         angles=False,
-        TRCL=None,
     ):
         """
         transform surface
         """
 
-        if TRCL:
-            TR1 = TRCL
-        else:
-            TR1 = TR(
-                *translation, *rotation[0], *rotation[1], *rotation[2], angles=angles, reg=self.reg
-            )
-            if self.reg:
-                self.reg.addTransformation(TR1)
+        TR1 = TR(
+            *translation, *rotation[0], *rotation[1], *rotation[2], angles=angles, reg=self.reg
+        )
+        if self.reg:
+            self.reg.addTransformation(TR1)
 
         if self.transformation:
-            self.transformation = self.transformation.compositeTR(TR1, self.transformation)
+            self.transformation.compositeTR(TR1)
         else:
             self.transformation = TR1
 
