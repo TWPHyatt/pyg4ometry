@@ -93,6 +93,7 @@ class Writer:
             f.write(line + "\n")
 
         f.write("\nc ********** DATA **********\n")
+        f.write("c --- TRANSFORMATIONS ---\n")
         for transformation in self.reg.transformationDict.values():
             fullLine = transformation.toOutputString()
             # wrap line by column max
@@ -100,6 +101,16 @@ class Writer:
             f.write(line + "\n")
 
         # ToDo data cards and keywords
+
+        # TEMP WRITING DATA STRING SO FILE RUNS WITHOUT ALTERATION
+        f.write("c\nmode p\nc\n")
+        f.write(
+            "m1 6000 -0.000124 7000 -0.755267 8000 -0.231782 18000 -0.012827\nm2 79000 -1.0\nm3 18000 -1.0\n"
+        )
+        f.write("c --- SOURCE ---\nc point source 14.0 MeV\n")
+        f.write("sdef     pos 45. 0. 0. erg=14. par=p\n")
+        f.write("c --- DETECTOR ---\n")
+        f.write("F5:p 0 -40 0 0\nNPS 2e5\n")
 
         # close file
         f.close()
