@@ -1,5 +1,5 @@
 from .Material import Material
-from .Transformation import TRCL
+from .Transformation import TR
 from .Surfaces import Intersection, Union, Complement, Surface
 import pyg4ometry
 
@@ -86,43 +86,39 @@ class Cell:
         """
         transform cell
         """
-        TRCL1 = TRCL(
-            *translation, *rotation[0], *rotation[1], *rotation[2], angles=angles, reg=self.reg
-        )
-
-        if self.reg:
-            if TRCL1 not in self.reg.transformationDict:
-                self.reg.addTransformation(TRCL1)
+        TR1 = TR(*translation, *rotation[0], *rotation[1], *rotation[2], angles=angles)
 
         if self.transformation:
-            self.transformation.compositeTR(TRCL1)
+            self.transformation.combineTR(TR1)
         else:
-            self.transformation = TRCL1
+            self.transformation = TR1
 
         # apply cell transform to all surfaces of the cell
-        self._walkGeometryTreeAndTransformSurfaces(self.geometry, TRCL1)
+        self._walkGeometryTreeAndTransformSurfaces(self.geometry, TR1)
 
         # if cell has children cells, need to go down hierarchy and apply composite transforms to surfaces
-        if self.cellChildrenList is not None:
-            for childCell in self.cellChildrenList:
-                childCell._walkGeometryTreeAndTransformSurfaces(childCell.geometry, TRCL1)
+        # if self.cellChildrenList is not None:
+        #    for childCell in self.cellChildrenList:
+        #        childCell._walkGeometryTreeAndTransformSurfaces(childCell.geometry, TRCL1)
 
-    def _walkGeometryTreeAndTransformSurfaces(self, geometry, TRCL1):
+    def _walkGeometryTreeAndTransformSurfaces(self, geometry, TR1):
         """
         walk geometry tree and at each surface apply the transformation to the surface
         """
         if isinstance(geometry, Surface):
-            geometry.transform(rotation=TRCL1.rotationMatrix, translation=TRCL1.displacementVector)
+            geometry.transform(
+                translation=TR1.displacementVector, rotation=TR1.rotationMatrix, angles=TR1.angles
+            )
         elif isinstance(geometry, Intersection):
-            self._walkGeometryTreeAndTransformSurfaces(geometry.left, TRCL1)
-            self._walkGeometryTreeAndTransformSurfaces(geometry.right, TRCL1)
+            self._walkGeometryTreeAndTransformSurfaces(geometry.left, TR1)
+            self._walkGeometryTreeAndTransformSurfaces(geometry.right, TR1)
         elif isinstance(geometry, Union):
-            self._walkGeometryTreeAndTransformSurfaces(geometry.left, TRCL1)
-            self._walkGeometryTreeAndTransformSurfaces(geometry.right, TRCL1)
+            self._walkGeometryTreeAndTransformSurfaces(geometry.left, TR1)
+            self._walkGeometryTreeAndTransformSurfaces(geometry.right, TR1)
         elif isinstance(geometry, Complement):
-            self._walkGeometryTreeAndTransformSurfaces(geometry.item, TRCL1)
+            self._walkGeometryTreeAndTransformSurfaces(geometry.item, TR1)
 
-    def _walkCellHierarchyAndTransformSurfaces(self, geometry, TRCL1):
+    def _walkCellHierarchyAndTransformSurfaces(self, geometry, TR1):
         """
         1. walk cell hierarchy
         2. stack the composite transformations recursively down the cell hierarchy
@@ -131,15 +127,16 @@ class Cell:
         if isinstance(geometry, Surface):
             geometry.transform(rotation=None, translation=None)
         elif isinstance(geometry, Intersection):
-            self._walkGeometryTreeAndTransformSurfaces(geometry.left, TRCL1)
-            self._walkGeometryTreeAndTransformSurfaces(geometry.right, TRCL1)
+            self._walkGeometryTreeAndTransformSurfaces(geometry.left, TR1)
+            self._walkGeometryTreeAndTransformSurfaces(geometry.right, TR1)
         elif isinstance(geometry, Union):
-            self._walkGeometryTreeAndTransformSurfaces(geometry.left, TRCL1)
-            self._walkGeometryTreeAndTransformSurfaces(geometry.right, TRCL1)
+            self._walkGeometryTreeAndTransformSurfaces(geometry.left, TR1)
+            self._walkGeometryTreeAndTransformSurfaces(geometry.right, TR1)
         elif isinstance(geometry, Complement):
-            self._walkGeometryTreeAndTransformSurfaces(geometry.item, TRCL1)
+            self._walkGeometryTreeAndTransformSurfaces(geometry.item, TR1)
 
     def _bakeTransform(self):
+        # ToDo
         # cannot have TRCL number >999
         # so when reaching this limit we can instead bake-in the TRCL transforms
         # it will need to edit the surfaces of the cells and transform them according to the TRCL

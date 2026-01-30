@@ -98,7 +98,7 @@ class TR:
             reg.addTransformation(self)
             self.reg = reg
 
-    def copy(self):
+    def copy(self, reg=None):
         copyTR = TR(
             *self.displacementVector,
             *self.rotationMatrix[0],
@@ -107,11 +107,13 @@ class TR:
             angles=self.angles,
             displacementOrigin=self.displacementOrigin,
         )
+        if reg:
+            self.reg.addTransformation(copyTR)
         return copyTR
 
-    def compositeTR(self, TR2):
+    def combineTR(self, TR2):
         """
-        combines two transformations
+        combines two transformations in place
         """
         self.displacementVector[0] = self.displacementVector[0] + TR2.displacementVector[0]
         self.displacementVector[1] = self.displacementVector[1] + TR2.displacementVector[1]

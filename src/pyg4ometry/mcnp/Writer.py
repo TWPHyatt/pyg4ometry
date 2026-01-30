@@ -96,8 +96,8 @@ class Writer:
         f.write("c --- TRANSFORMATIONS ---\n")
         for transformation in self.reg.transformationDict.values():
             fullLine = transformation.toOutputString()
-            # wrap line by column max
-            line = self._splitByMaxColumn(fullLine)
+            cleanLine = self._roundInputValues(fullLine)
+            line = self._splitByMaxColumn(cleanLine)
             f.write(line + "\n")
 
         # ToDo data cards and keywords

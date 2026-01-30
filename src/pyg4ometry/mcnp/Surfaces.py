@@ -114,16 +114,16 @@ class Surface:
         transform surface
         """
 
-        TR1 = TR(
-            *translation, *rotation[0], *rotation[1], *rotation[2], angles=angles, reg=self.reg
-        )
-        if self.reg:
-            self.reg.addTransformation(TR1)
+        TR1 = TR(*translation, *rotation[0], *rotation[1], *rotation[2], angles=angles)
 
         if self.transformation:
-            self.transformation.compositeTR(TR1)
+            self.transformation.combineTR(TR1)
         else:
             self.transformation = TR1
+
+        if self.reg:
+            if self.transformation not in self.reg.transformationDict.items():
+                self.reg.addTransformation(self.transformation)
 
     def _rotationAboutAxis(self, a, b):
         a = a / _np.linalg.norm(a)

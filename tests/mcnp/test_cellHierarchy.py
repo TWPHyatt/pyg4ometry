@@ -68,7 +68,7 @@ def test_twoBoxHierarchy(vis, write):
         title = f"CELL INSIDE CELL"
         f.setTitle(title)
         f.addGeometry(reg=reg)
-        fileName = f"i-twoBoxHierarchy-Test4.txt"
+        fileName = f"i-twoBoxHierarchy-Test0.txt"
         f.write(fileName)
 
     if vis:
