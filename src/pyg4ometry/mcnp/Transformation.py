@@ -69,7 +69,6 @@ class TR:
         rotzz=1.0,
         displacementOrigin=1.0,
         angles=False,
-        reg=None,
         transformationNumber=None,
     ):
         if angles:
@@ -84,19 +83,23 @@ class TR:
             rotzz = _np.cos(rotzz)
 
         self.angles = angles
-
         self.displacementVector = [o1, o2, o3]
         self.rotationMatrix = _np.array(
             [[rotxx, rotyx, rotzx], [rotxy, rotyy, rotzy], [rotxz, rotyz, rotzz]]
         )
-
         self.displacementOrigin = displacementOrigin
         self.transformationNumber = transformationNumber
-        self.angles = angles
 
-        if reg:
-            reg.addTransformation(self)
-            self.reg = reg
+        # ToDo
+        """
+        if displacementOrigin == -1:
+            self.displacementVector =
+        elif displacementOrigin == 1:
+            self.displacementVector =
+        else:
+            msg = f"displacementOrigin can only be either -1 or +1"
+            raise TypeError(msg)
+        """
 
     def copy(self, reg=None):
         copyTR = TR(

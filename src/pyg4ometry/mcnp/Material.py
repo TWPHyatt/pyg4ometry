@@ -3,21 +3,12 @@ class Material:
     Material-focused CELL Card
     """
 
-    def __init__(self, materialNumber, density=None, reg=None):
+    def __init__(self, materialNumber, density=None):
         self.density = density
-        if self.density is None:
+        if (self.density is None) or (self.density == 0) or (self.density == 0.0):
             self.materialNumber = 0
-            if reg:
-                reg.addVoid(self)
-                self.reg = reg
         else:
             self.materialNumber = materialNumber
-            if reg:
-                if self.materialNumber in reg.materialDict.keys():
-                    reg.addMaterial(self, replace=True)
-                else:
-                    reg.addMaterial(self)
-                self.reg = reg
 
     def __itter__(self, lis):
         for el in range(len(lis)):

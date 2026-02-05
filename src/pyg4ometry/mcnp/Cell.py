@@ -16,9 +16,6 @@ class Cell:
         importance=None,
         transformation=None,
     ):
-        self.surfaceList = (
-            [] if surfaces is None else surfaces
-        )  # todo can I delete? (replace writer surface list with geometry walk, bottom of tree surfaces)
         self.cellNumber = cellNumber
         self.geometry = geometry
         self.material = material
@@ -61,114 +58,17 @@ class Cell:
             self.geometry, pyg4ometry.mcnp.Complement(childCell.geometry)
         )
         self.cellChildrenList.append(childCell)
-        """
-        for childSurface in childCell.surfaceList:
-            if childSurface in self.surfaceList:
-                self.surfaceList.remove(childSurface)
-        """
-
-        if self.reg:
-            surfaceUpdateReg = []
-            surfaceAddReg = []
-            for regSurface in self.reg.surfaceDict:
-                for childSurface in childCell.surfaceList:
-                    if regSurface == childSurface:
-                        surfaceUpdateReg.append(childSurface)
-                    else:
-                        surfaceAddReg.append(childSurface)
-
-            self.reg.addSurfaces(surfaceUpdateReg, replace=True)
-            self.reg.addSurfaces(surfaceAddReg, replace=False)
-
-    def transform(
-        self, rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], translation=[0, 0, 0], angles=False
-    ):
-        """
-        transform cell
-        """
-        TR1 = TR(*translation, *rotation[0], *rotation[1], *rotation[2], angles=angles)
-
-        if self.transformation:
-            self.transformation.combineTR(TR1)
-        else:
-            self.transformation = TR1
-
-        # apply cell transform to all surfaces of the cell
-        self._walkGeometryTreeAndTransformSurfaces(self.geometry, TR1)
-
-        # if cell has children cells, need to go down hierarchy and apply composite transforms to surfaces
-        # if self.cellChildrenList is not None:
-        #    for childCell in self.cellChildrenList:
-        #        childCell._walkGeometryTreeAndTransformSurfaces(childCell.geometry, TRCL1)
-
-    def _walkGeometryTreeAndTransformSurfaces(self, geometry, TR1):
-        """
-        walk geometry tree and at each surface apply the transformation to the surface
-        """
-        if isinstance(geometry, Surface):
-            geometry.transform(
-                translation=TR1.displacementVector, rotation=TR1.rotationMatrix, angles=TR1.angles
-            )
-        elif isinstance(geometry, Intersection):
-            self._walkGeometryTreeAndTransformSurfaces(geometry.left, TR1)
-            self._walkGeometryTreeAndTransformSurfaces(geometry.right, TR1)
-        elif isinstance(geometry, Union):
-            self._walkGeometryTreeAndTransformSurfaces(geometry.left, TR1)
-            self._walkGeometryTreeAndTransformSurfaces(geometry.right, TR1)
-        elif isinstance(geometry, Complement):
-            self._walkGeometryTreeAndTransformSurfaces(geometry.item, TR1)
-
-    def _walkCellHierarchyAndTransformSurfaces(self, geometry, TR1):
-        """
-        1. walk cell hierarchy
-        2. stack the composite transformations recursively down the cell hierarchy
-        3. at each surface apply the composite transformation SO FAR transformation to the surface
-        """
-        if isinstance(geometry, Surface):
-            geometry.transform(rotation=None, translation=None)
-        elif isinstance(geometry, Intersection):
-            self._walkGeometryTreeAndTransformSurfaces(geometry.left, TR1)
-            self._walkGeometryTreeAndTransformSurfaces(geometry.right, TR1)
-        elif isinstance(geometry, Union):
-            self._walkGeometryTreeAndTransformSurfaces(geometry.left, TR1)
-            self._walkGeometryTreeAndTransformSurfaces(geometry.right, TR1)
-        elif isinstance(geometry, Complement):
-            self._walkGeometryTreeAndTransformSurfaces(geometry.item, TR1)
-
-    def _bakeTransform(self):
-        # ToDo
-        # cannot have TRCL number >999
-        # so when reaching this limit we can instead bake-in the TRCL transforms
-        # it will need to edit the surfaces of the cells and transform them according to the TRCL
-
-        # easiest way to do this:
-        #   - copy the cell
-        #   - add a transformation to the surfaces in the copied cell, this transformation is the TRCL
-        pass
-
-    def addSurface(self, surface):
-        if self.reg:
-            if surface in self.reg.surfaceDict:
-                surface = self.reg.surfaceDict[surface]
-        self.surfaceList.append(surface)
-
-    def addSurfaces(self, surfaces):
-        for i, s in enumerate(surfaces):
-            if s in self.reg.surfaceDict:
-                surfaces[i] = self.reg.surfaceDict[s]
-        self.surfaceList.extend(surfaces)
-
-    def addMacrobody(self, macrobody):
-        self.addSurface(macrobody)
-
-    def addMacrobodies(self, macrobody):
-        self.addSurfaces(macrobody)
 
     def addMaterial(self, material):
         self.material = material
+        if self.reg:
+            self.reg.addMaterial(material)
 
     def addGeometry(self, geometry):
         self.geometry = geometry
+        for surface in self.surfaceList(self.geometry):
+            if self.reg:
+                self.reg.addSurface(surface)
 
     # there are multiple keyword parameters than can be added
     # reader "cellParams" dictionary
@@ -180,6 +80,20 @@ class Cell:
             # print("Cell", self.cellNumber, "is void")
             # print(" > Overriding importance and setting to zero.")
         self.importance.append(importance)
+
+    def surfaceList(self, geometry, sList=[]):
+        # walk geometry and return list of surfaces
+        if isinstance(geometry, Surface):
+            sList.append(geometry)
+        elif isinstance(geometry, Intersection):
+            self.surfaceList(geometry.left, sList)
+            self.surfaceList(geometry.right, sList)
+        elif isinstance(geometry, Union):
+            self.surfaceList(geometry.left, sList)
+            self.surfaceList(geometry.right, sList)
+        elif isinstance(geometry, Complement):
+            self.surfaceList(geometry.item, sList)
+        return sList
 
     def toOutputString(self):
         return str(self.cellNumber)

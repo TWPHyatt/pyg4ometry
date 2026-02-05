@@ -32,6 +32,9 @@ class Writer:
 
         f = open(fileName, "w")
 
+        # self.reg.hashTransformations()
+        # self.reg.hashMaterials()
+
         f.write(f"{self.title}\n")
 
         f.write("c ********** CELLS **********\n")
@@ -43,8 +46,7 @@ class Writer:
             parts.append(self.reg.cellDict[cell].toOutputString())
 
             # material output
-            materialNumber = self.reg.cellDict[cell].material.materialNumber
-            parts.append(self.reg.materialDict[materialNumber].toOutputString())
+            parts.append(self.reg.cellDict[cell].material.toOutputString())
 
             # geometry output
             parts.append(self.reg.cellDict[cell].geometry.toOutputString())
@@ -66,7 +68,7 @@ class Writer:
 
         surfacesToWrite = []
         for cell in self.reg.cellDict.values():
-            for surface in cell.surfaceList:
+            for surface in cell.surfaceList(cell.geometry):
                 if surface not in surfacesToWrite:
                     surfacesToWrite.append(surface)
 
@@ -78,8 +80,8 @@ class Writer:
             # surface mnemonic and input parameters
             parts.append(surface.__repr__())
 
-            if surface.transformation is not None:
-                parts.insert(1, str(surface.transformation.transformationNumber))
+            if cell.transformation is not None:
+                parts.insert(1, str(cell.transformation.transformationNumber))
 
             # join all parts with spaces
             fullLine = " ".join(parts)
@@ -94,11 +96,15 @@ class Writer:
 
         f.write("\nc ********** DATA **********\n")
         f.write("c --- TRANSFORMATIONS ---\n")
-        for transformation in self.reg.transformationDict.values():
-            fullLine = transformation.toOutputString()
-            cleanLine = self._roundInputValues(fullLine)
-            line = self._splitByMaxColumn(cleanLine)
-            f.write(line + "\n")
+        transformationsToWrite = []
+        for cell in self.reg.cellDict.values():
+            if cell.transformation not in transformationsToWrite:
+                transformationsToWrite.append(cell.transformation)
+                if cell.transformation is not None:
+                    fullLine = cell.transformation.toOutputString()
+                    cleanLine = self._roundInputValues(fullLine)
+                    line = self._splitByMaxColumn(cleanLine)
+                    f.write(line + "\n")
 
         # ToDo data cards and keywords
 
