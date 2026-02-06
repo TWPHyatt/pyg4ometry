@@ -32,6 +32,7 @@ class Writer:
 
         f = open(fileName, "w")
 
+        self.reg.updateRegistry()
         # self.reg.hashTransformations()
         # self.reg.hashMaterials()
 
@@ -56,6 +57,9 @@ class Writer:
                 parts.append(imp.toOutputString())
                 # todo maybe check if multiple importances then can only be of form 1
                 # todo form 2 is specified in the data card only so can't be added to a cell...
+
+            if self.reg.cellDict[cell].transformation:
+                parts.append(f"TRCL={self.reg.cellDict[cell].transformation.transformationNumber}")
 
             # join all parts with spaces
             fullLine = " ".join(parts)
@@ -96,12 +100,24 @@ class Writer:
 
         f.write("\nc ********** DATA **********\n")
         f.write("c --- TRANSFORMATIONS ---\n")
+        # TRCL
         transformationsToWrite = []
         for cell in self.reg.cellDict.values():
             if cell.transformation not in transformationsToWrite:
                 transformationsToWrite.append(cell.transformation)
                 if cell.transformation is not None:
                     fullLine = cell.transformation.toOutputString()
+                    cleanLine = self._roundInputValues(fullLine)
+                    line = self._splitByMaxColumn(cleanLine)
+                    f.write(line + "\n")
+
+        # TR
+        transformationsToWrite = []
+        for surface in surfacesToWrite:
+            if surface.transformation not in transformationsToWrite:
+                transformationsToWrite.append(surface.transformation)
+                if surface.transformation is not None:
+                    fullLine = surface.transformation.toOutputString()
                     cleanLine = self._roundInputValues(fullLine)
                     line = self._splitByMaxColumn(cleanLine)
                     f.write(line + "\n")

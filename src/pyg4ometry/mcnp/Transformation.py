@@ -93,9 +93,9 @@ class TR:
         # ToDo
         """
         if displacementOrigin == -1:
-            self.displacementVector =
+            self.displacementVector = ...
         elif displacementOrigin == 1:
-            self.displacementVector =
+            self.displacementVector = ...
         else:
             msg = f"displacementOrigin can only be either -1 or +1"
             raise TypeError(msg)
@@ -144,21 +144,20 @@ class TR:
 class TRCL(TR):
     def __init__(
         self,
-        o1=0,
-        o2=0,
-        o3=0,
-        rotxx=1,
-        rotyx=0,
-        rotzx=0,
-        rotxy=0,
-        rotyy=1,
-        rotzy=0,
-        rotxz=0,
-        rotyz=0,
-        rotzz=1,
-        displacementOrigin=1,
+        o1=0.0,
+        o2=0.0,
+        o3=0.0,
+        rotxx=1.0,
+        rotyx=0.0,
+        rotzx=0.0,
+        rotxy=0.0,
+        rotyy=1.0,
+        rotzy=0.0,
+        rotxz=0.0,
+        rotyz=0.0,
+        rotzz=1.0,
+        displacementOrigin=1.0,
         angles=False,
-        reg=None,
         transformationNumber=None,
     ):
         super().__init__(
@@ -176,7 +175,6 @@ class TRCL(TR):
             rotzz,
             displacementOrigin,
             angles,
-            reg,
             transformationNumber,
         )
 
@@ -189,7 +187,7 @@ class TRCL(TR):
 
     def toOutputString(self):
         return (
-            f"TRCL{self.transformationNumber} "
+            f"TR{self.transformationNumber} "
             f"{self.displacementVector[0]}  {self.displacementVector[1]} {self.displacementVector[2]} "
             f"{self.rotationMatrix[0][0]} {self.rotationMatrix[0][1]} {self.rotationMatrix[0][2]} "
             f"{self.rotationMatrix[1][0]} {self.rotationMatrix[1][1]} {self.rotationMatrix[1][2]} "

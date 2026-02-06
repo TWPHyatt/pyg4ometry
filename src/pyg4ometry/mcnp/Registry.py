@@ -1,12 +1,5 @@
-from .Surfaces import BOX as _BOX
-from .Surfaces import RPP as _RPP
-from .Surfaces import RCC as _RCC
-from .Surfaces import RHP_HEX as _RHP_HEX
-from .Surfaces import REC as _REC
-from .Surfaces import TRC as _TRC
-from .Surfaces import WED as _WED
-from .Surfaces import ARB as _ARB
 import numpy as _np
+from .Transformation import TR, TRCL
 
 
 class Registry:
@@ -49,7 +42,7 @@ class Registry:
     def addTransformation(self, transformation, replace=False):
         if replace:
             if transformation.transformationNumber not in self.transformationDict:
-                msg = f"Could not find transformation {transformation.transformationNumber} in registry."
+                msg = f"Could not find transformation TRCL {transformation.transformationNumber} in registry."
                 raise TypeError(msg)
             else:
                 self.transformationDict[transformation.transformationNumber] = transformation
@@ -57,9 +50,6 @@ class Registry:
             if transformation.transformationNumber not in self.transformationDict:
                 transformation.transformationNumber = self.getNewTransformationNumber()
             self.transformationDict[transformation.transformationNumber] = transformation
-        else:
-            msg = "Replace can only be True or False when adding a transformation to registry."
-            raise TypeError(msg)
 
     def addMaterial(self, material, replace=False):
         if replace:
@@ -100,12 +90,26 @@ class Registry:
     def updateRegistry(self):
         for cell in self.cellDict.values():
             if cell.material:
-                self.addMaterial(cell.material, replace=True)
+                if cell.material.materialNumber is None:
+                    self.addMaterial(cell.material, replace=False)
+                else:
+                    self.addMaterial(cell.material, replace=True)
             if cell.transformation:
-                self.addTransformation(cell.transformation, replace=True)
+                if cell.transformation.transformationNumber is None:
+                    self.addTransformation(cell.transformation, replace=False)
+                else:
+                    self.addTransformation(cell.transformation, replace=True)
             for surface in cell.surfaceList(cell.geometry):
                 if surface:
-                    self.addSurface(surface, replace=True)
+                    if surface.surfaceNumber is None:
+                        self.addSurface(surface, replace=False)
+                    else:
+                        self.addSurface(surface, replace=True)
+                if surface.transformation:
+                    if surface.transformation.transformationNumber is None:
+                        self.addTransformation(surface.transformation, replace=False)
+                    else:
+                        self.addTransformation(surface.transformation, replace=True)
 
     def hashTransformations(self):
         # hash transformations

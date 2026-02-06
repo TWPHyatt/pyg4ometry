@@ -1,5 +1,6 @@
+import numpy as _np
 from .Material import Material
-from .Transformation import TR
+from .Transformation import TR, TRCL
 from .Surfaces import Intersection, Union, Complement, Surface
 import pyg4ometry
 
@@ -50,6 +51,53 @@ class Cell:
 
         return cell_p
 
+    def addTransformation(self, TRCL1):
+        if type(TRCL1) is TRCL:
+            self.transform(
+                translation=TRCL1.displacementVector,
+                rotation=TRCL1.rotationMatrix,
+                angles=TRCL1.angles,
+            )
+        else:
+            msg = f"only transformations of type TR should be applied to surfaces"
+            raise TypeError(msg)
+
+    def transform(
+        self, translation=[0, 0, 0], rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], angles=False
+    ):
+
+        if angles:
+            rotation[0][0] = _np.cos(rotation[0][0])
+            rotation[1][0] = _np.cos(rotation[1][0])
+            rotation[2][0] = _np.cos(rotation[2][0])
+            rotation[0][1] = _np.cos(rotation[0][1])
+            rotation[1][1] = _np.cos(rotation[1][1])
+            rotation[2][1] = _np.cos(rotation[2][1])
+            rotation[0][2] = _np.cos(rotation[0][2])
+            rotation[1][2] = _np.cos(rotation[1][2])
+            rotation[2][2] = _np.cos(rotation[2][2])
+
+        TRCL1 = TRCL(*translation, *rotation[0], *rotation[1], *rotation[2], angles=angles)
+
+        if self.transformation:
+            self.transformation.combineTR(TRCL1)
+        else:
+            self.transformation = TRCL1
+
+        if self.geometry is None:
+            msg = f"Unable to transform cell {self.cellNumber} without a cell geometry"
+            raise TypeError(msg)
+
+        for surface in self.surfaceList(geometry=self.geometry):
+            if surface._cellTransformation:
+                surface._cellTransformation.combineTR(TRCL1)
+            else:
+                surface._cellTransformation = TRCL1
+
+        if self.reg:
+            if self.transformation:
+                self.reg.addTransformation(self.transformation)
+
     def addChildCell(self, childCell):
         if childCell.geometry is None:
             msg = f"The child cell geometry is None"
@@ -69,6 +117,8 @@ class Cell:
         for surface in self.surfaceList(self.geometry):
             if self.reg:
                 self.reg.addSurface(surface)
+                if surface.transformation:
+                    self.reg.addTransformation(surface.transformation)
 
     # there are multiple keyword parameters than can be added
     # reader "cellParams" dictionary
@@ -81,8 +131,10 @@ class Cell:
             # print(" > Overriding importance and setting to zero.")
         self.importance.append(importance)
 
-    def surfaceList(self, geometry, sList=[]):
+    def surfaceList(self, geometry, sList=None):
         # walk geometry and return list of surfaces
+        if sList is None:
+            sList = []
         if isinstance(geometry, Surface):
             sList.append(geometry)
         elif isinstance(geometry, Intersection):

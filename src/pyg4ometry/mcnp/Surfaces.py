@@ -96,11 +96,13 @@ class Complement:
 class Surface:
     def __init__(self, surfaceNumber=None, transformation=None):
         self.surfaceNumber = surfaceNumber
+        self.transformation = transformation
+        self._cellTransformation = None  # needed for visualisation mesh
 
     def toOutputString(self):
         return str(self.surfaceNumber)
 
-    def applyTR(self, TR1):
+    def addTransformation(self, TR1):
         if type(TR1) is TR:
             self.transform(
                 translation=TR1.displacementVector, rotation=TR1.rotationMatrix, angles=TR1.angles
@@ -110,14 +112,8 @@ class Surface:
             raise TypeError(msg)
 
     def transform(
-        self,
-        translation=[0, 0, 0],
-        rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]],
-        angles=False,
+        self, translation=[0, 0, 0], rotation=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], angles=False
     ):
-        """
-        transform surface by baking in the transformation
-        """
 
         if angles:
             rotation[0][0] = _np.cos(rotation[0][0])
@@ -130,14 +126,12 @@ class Surface:
             rotation[1][2] = _np.cos(rotation[1][2])
             rotation[2][2] = _np.cos(rotation[2][2])
 
-        s_p = self._transform(rotation=rotation, translation=translation)
+        TR1 = TR(*translation, *rotation[0], *rotation[1], *rotation[2], angles=angles)
 
-        s1_attrs = vars(self)
-        s2_attrs = vars(s_p)
-
-        for attr, value in s1_attrs.items():
-            if attr in s2_attrs:
-                setattr(self, attr, s2_attrs[attr])
+        if self.transformation:
+            self.transformation.combineTR(TR1)
+        else:
+            self.transformation = TR1
 
     def _rotationAboutAxis(self, a, b):
         a = a / _np.linalg.norm(a)
@@ -923,10 +917,21 @@ class S(Surface):
         return s_p
 
     def mesh(self):
-        if self.transformation:
+        if (self._cellTransformation is not None) or (self.transformation is not None):
+            transformation = TR()
+        else:
+            transformation = None
+
+        if transformation:
+            if self._cellTransformation:
+                transformation.combineTR(self._cellTransformation)
+            if self.transformation:
+                transformation.combineTR(self.transformation)
+
+        if transformation:
             s_p = self._transform(
-                rotation=self.transformation.rotationMatrix,
-                translation=self.transformation.displacementVector,
+                rotation=transformation.rotationMatrix,
+                translation=transformation.displacementVector,
             )
         else:
             reg = g4Reg()
