@@ -15,6 +15,7 @@ from . import convert
 from . import exceptions
 from . import fluka
 from . import mcnp
+from . import vdb
 from . import gdml
 from . import io
 from . import geant4
