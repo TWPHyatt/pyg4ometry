@@ -69,6 +69,16 @@ class ViewerBase:
         self.instancePlacements = {}  # instance placements
         self.instanceVisOptions = {}  # instance vis options
         self.instancePbrOptions = {}  # instance pbr options
+        self.instanceMaterials = {}  # instance materials
+
+    def addMaterial(self, name, materialName):
+        """
+        Store the material name for a mesh instance
+        """
+        if name in self.instanceMaterials:
+            self.instanceMaterials[name].append(materialName)
+        else:
+            self.instanceMaterials[name] = [materialName]
 
     def _getMaterialVis(self, materialName):
         materialVis = None
@@ -138,6 +148,11 @@ class ViewerBase:
                     self.addMesh(meshNameDecom, extruDecom.mesh())
                     self.addInstance(meshNameDecom, mtra, tra, name)
                     self.addVisOptions(meshNameDecom, visOptions)
+
+        # store material name for this logical volume
+        if lv.type == "logical" and hasattr(lv, "material"):
+            matName = lv.material.name if hasattr(lv.material, "name") else str(lv.material)
+            self.addMaterial(lv.name, matName)
 
         if lv.type == "logical" and lv.mesh is not None:
             # add mesh
