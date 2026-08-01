@@ -1,4 +1,4 @@
-import os
+import os as _os
 import numpy as _np
 import pathlib as _pl
 import pyg4ometry.gdml as _gd
@@ -20,7 +20,7 @@ box 3: (20, 20, 20) mm, inside world : translation (-12.5, 0, 0) & (0 , 0, 0) ro
 def Test(
     voxelSize=0.1,
     halfWidth=3.0,
-    fileName="multipleboxes",
+    fileName="boxes",
     vis=True,
     writeGDML=True,
     writeVDB=True,
@@ -45,8 +45,8 @@ def Test(
     bx = _gd.Constant("bx", "20", reg, True)
     by = _gd.Constant("by", "20", reg, True)
     bz = _gd.Constant("bz", "20", reg, True)
-    s_box1 = _g4.solid.Box("box1", bx, by, bz, reg)
-    s_box2 = _g4.solid.Box("box2", bx / 4, by / 4, bz / 4, reg)
+    s_box1 = _g4.solid.Box("s_box1", bx, by, bz, reg)
+    s_box2 = _g4.solid.Box("s_box2", bx / 4, by / 4, bz / 4, reg)
 
     # material
     m_w = _g4.nist_material_2geant4Material("G4_Galactic", reg)
