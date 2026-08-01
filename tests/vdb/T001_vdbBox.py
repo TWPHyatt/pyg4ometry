@@ -1,5 +1,6 @@
 import os
 import numpy as _np
+import pathlib as _pl
 import pyg4ometry.gdml as _gd
 import pyg4ometry.geant4 as _g4
 import pyg4ometry.visualisation as _vi
@@ -9,7 +10,7 @@ import nanovdb
 
 """
 geometry: single box
-world box: (100, 100, 100) mm
+world box: (50, 50, 50) mm
 box 1: (20, 20, 20) mm, inside world : translation (10, 10, 10) & (0 , 0, 0) rotation
 """
 
@@ -17,7 +18,7 @@ box 1: (20, 20, 20) mm, inside world : translation (10, 10, 10) & (0 , 0, 0) rot
 def Test(
     voxelSize=0.1,
     halfWidth=3.0,
-    fileName="multipleboxes",
+    fileName="box",
     vis=True,
     writeGDML=True,
     writeVDB=True,
@@ -26,28 +27,31 @@ def Test(
     testdata=None,
 ):
 
+    if not outputPath:
+        outputPath = _pl.Path(__file__).parent
+
     # registry to store gdml data
     reg = _g4.Registry()
 
     # world solid
-    wx = _gd.Constant("wx", "100", reg, True)
-    wy = _gd.Constant("wy", "100", reg, True)
-    wz = _gd.Constant("wz", "100", reg, True)
+    wx = _gd.Constant("wx", "50", reg, True)
+    wy = _gd.Constant("wy", "50", reg, True)
+    wz = _gd.Constant("wz", "50", reg, True)
     s_w = _g4.solid.Box("ws", wx, wy, wz, reg, "mm")
 
-    # box solid placed at origin
+    # box solid
     bx = _gd.Constant("bx", "20", reg, True)
     by = _gd.Constant("by", "20", reg, True)
     bz = _gd.Constant("bz", "20", reg, True)
-    b1 = _g4.solid.Box("b1", bx, by, bz, reg)
+    s_box1 = _g4.solid.Box("box1", bx, by, bz, reg)
 
     # material
     m_w = _g4.nist_material_2geant4Material("G4_Galactic", reg)
-    m_b = _g4.MaterialPredefined("G4_Pb", reg)
+    m_box1 = _g4.MaterialPredefined("G4_Pb", reg)
 
     # structure
     l_w = _g4.LogicalVolume(s_w, m_w, "l_world", reg, "mm")
-    l_box1 = _g4.LogicalVolume(b1, m_b, "l_box1", reg, "mm")
+    l_box1 = _g4.LogicalVolume(s_box1, m_box1, "l_box1", reg, "mm")
     p_box1 = _g4.PhysicalVolume([0, 0, 0], [10, 10, 10], l_box1, "p_box1", l_w, reg)
 
     # set world

@@ -1,18 +1,18 @@
 import os
 import numpy as _np
+import pathlib as _pl
 import pyg4ometry.gdml as _gd
 import pyg4ometry.geant4 as _g4
 import pyg4ometry.visualisation as _vi
 import pyg4ometry.vdb as _vdb
 import openvdb
 import nanovdb
-import pathlib as _pl
 
 """
 geometry: multiple boxes
 world box: (50, 50, 50) mm
 box 1: (20, 20, 20) mm, inside world : translation (10, 10, 10) & (0, 0, -pi/8) rotation
-box 2: (20, 20, 20) mm, inside box 1 : translation (-5, -5, -5) & (0, pi/4, 0) rotation
+box 2: (5, 5, 5) mm, inside box 1 : translation (-5, -5, -5) & (0, pi/4, 0) rotation
 box 3: (20, 20, 20) mm, inside world : translation (-12.5, 0, 0) & (0 , 0, 0) rotation
 """
 
@@ -35,20 +35,36 @@ def Test(
     # registry to store gdml data
     reg = _g4.Registry()
 
-    # world solid and logical
-    s_w = _g4.solid.Box("ws", 50, 50, 50, reg)
-    l_w = _g4.LogicalVolume(s_w, "G4_Galactic", "wl", reg)
-    reg.setWorld(l_w.name)
+    # world solid
+    wx = _gd.Constant("wx", "50", reg, True)
+    wy = _gd.Constant("wy", "50", reg, True)
+    wz = _gd.Constant("wz", "50", reg, True)
+    s_w = _g4.solid.Box("ws", wx, wy, wz, reg, "mm")
 
-    # box placed at origin
-    b1 = _g4.solid.Box("b1", 20, 20, 20, reg)
-    b2 = _g4.solid.Box("b2", 5, 5, 5, reg)
-    l_box1 = _g4.LogicalVolume(b1, "G4_Fe", "l_box1", reg)
-    l_box2 = _g4.LogicalVolume(b2, "G4_Cu", "l_box2", reg)
-    l_box3 = _g4.LogicalVolume(b1, "G4_Ti", "l_box3", reg)
+    # two box solids
+    bx = _gd.Constant("bx", "20", reg, True)
+    by = _gd.Constant("by", "20", reg, True)
+    bz = _gd.Constant("bz", "20", reg, True)
+    s_box1 = _g4.solid.Box("box1", bx, by, bz, reg)
+    s_box2 = _g4.solid.Box("box2", bx / 4, by / 4, bz / 4, reg)
+
+    # material
+    m_w = _g4.nist_material_2geant4Material("G4_Galactic", reg)
+    m_box1 = _g4.MaterialPredefined("G4_Fe", reg)
+    m_box2 = _g4.MaterialPredefined("G4_Cu", reg)
+    m_box3 = _g4.MaterialPredefined("G4_Ti", reg)
+
+    # structure
+    l_w = _g4.LogicalVolume(s_w, "G4_Galactic", "wl", reg)
+    l_box1 = _g4.LogicalVolume(s_box1, m_box1, "l_box1", reg)
+    l_box2 = _g4.LogicalVolume(s_box2, m_box2, "l_box2", reg)
+    l_box3 = _g4.LogicalVolume(s_box1, m_box3, "l_box3", reg)
     p_box1 = _g4.PhysicalVolume([0, 0, -_np.pi / 8], [10, 10, 10], l_box1, "p_box1", l_w, reg)
     p_box2 = _g4.PhysicalVolume([0, _np.pi / 4, 0], [-5, -5, -5], l_box2, "p_box2", l_box1, reg)
     p_box3 = _g4.PhysicalVolume([0, 0, 0], [-12.5, 0, 0], l_box3, "p_box3", l_w, reg)
+
+    # set world
+    reg.setWorld(l_w.name)
 
     # bounding box extents (for visualisation axes)
     extentBB = l_w.extent(includeBoundingSolid=True)
