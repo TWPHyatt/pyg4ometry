@@ -56,10 +56,7 @@ def Test(
     if writeGDML:
         w = _gd.Writer()
         w.addDetector(reg)
-        w.write(os.path.join(os.path.dirname(__file__), fileName + ".gdml"))
-        w.writeGmadTester(
-            os.path.join(os.path.dirname(__file__), fileName + ".gmad"), fileName + ".gdml"
-        )
+        w.write(outputPath / (fileName + ".gdml"))
         print(f"[GDML] written: {fileName}.gdml")
 
     if writeVDB or writeNanoVDB:
@@ -68,14 +65,14 @@ def Test(
         grids = geomvdb.buildVDBGrids(voxelSize=voxelSize, halfWidth=halfWidth)
 
         if writeVDB:
-            openvdb.write(fileName + ".vdb", grids=grids)
+            openvdb.write(str(outputPath / (fileName + ".vdb")), grids=grids)
             print(f"[OpenVDB] written: {fileName}.vdb")
 
         if writeNanoVDB:
             # convert each OpenVDB grid to NanoVDB and write to file
             nanoGrids = [nanovdb.tools.openToNanoVDB(g) for g in grids]
             for nanoGrid in nanoGrids:
-                nanovdb.io.writeGrid(fileName + ".nvdb", nanoGrid)
+                nanovdb.io.writeGrid(str(outputPath / (fileName + ".nvdb")), nanoGrid)
             print(f"[NanoVDB] Written: {fileName}.nvdb")
 
     # bounding box extents (for visualisation axes)
