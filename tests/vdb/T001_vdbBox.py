@@ -1,4 +1,4 @@
-import os
+import os as _os
 import numpy as _np
 import pathlib as _pl
 import pyg4ometry.gdml as _gd
@@ -43,7 +43,7 @@ def Test(
     bx = _gd.Constant("bx", "20", reg, True)
     by = _gd.Constant("by", "20", reg, True)
     bz = _gd.Constant("bz", "20", reg, True)
-    s_box1 = _g4.solid.Box("box1", bx, by, bz, reg)
+    s_box1 = _g4.solid.Box("s_box1", bx, by, bz, reg)
 
     # material
     m_w = _g4.nist_material_2geant4Material("G4_Galactic", reg)
