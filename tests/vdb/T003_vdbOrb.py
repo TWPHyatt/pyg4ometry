@@ -29,6 +29,8 @@ def Test(
     testdata=None,
 ):
 
+    fileName = fileName + "Geometry"
+
     if not outputPath:
         outputPath = _pl.Path(__file__).parent
 
